@@ -73,8 +73,9 @@ function updateHistory() {
         });
 }
 
-document.getElementById('run-github').onclick = () => startJob('github_to_local_to_etx');
-document.getElementById('run-remote').onclick = () => startJob('remote_etx');
+document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
+document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');
+document.getElementById('run-etx-commands').onclick = () => startJob('run_etx_commands');
 document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
 
 document.getElementById('settings-form').onsubmit = function(e) {

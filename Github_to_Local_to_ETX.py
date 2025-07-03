@@ -16,11 +16,29 @@ delete_files = True
 def load_settings(settings_path="settings.txt"):
     settings = {}
     with open(settings_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                key, value = line.split("=", 1)
-                settings[key.strip()] = value.strip()
+        lines = f.readlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if not line or line.startswith("#"):
+            i += 1
+            continue
+        if line.startswith("REMOTE_COMMANDS="):
+            # Skip multi-line commands for this script
+            i += 1
+            while i < len(lines):
+                cmd_line = lines[i].strip()
+                if not cmd_line or cmd_line.startswith("#"):
+                    i += 1
+                    continue
+                if "=" in cmd_line and not cmd_line.startswith(" "):
+                    break
+                i += 1
+            continue
+        if "=" in line:
+            key, value = line.split("=", 1)
+            settings[key.strip()] = value.strip()
+        i += 1
     return settings
 
 settings = load_settings()
@@ -97,13 +115,28 @@ def sftp_upload_dir(sftp, local_dir, remote_dir):
                 failed_files += 1
     print(f"Upload summary: {success_files}/{total_files} files succeeded, {failed_files} failed.")
 
-def run_github_to_local_to_etx():
+def download_github_to_local():
     print(f"Downloading {GITHUB_ZIP_URL} to {ZIP_PATH}...")
     download_github_zip(GITHUB_ZIP_URL, ZIP_PATH)
     print(f"Unzipping {ZIP_PATH} to {UNZIP_DIR}...")
     unzip_file(ZIP_PATH, UNZIP_DIR)
     print(f"Copying files from {UNZIP_DIR} to {LOCAL_TARGET_DIR}...")
     copy_all(UNZIP_DIR, LOCAL_TARGET_DIR)
+    print("Github to Local complete.")
+    if delete_files:
+        try:
+            os.remove(ZIP_PATH)
+            print(f"Deleted ZIP file: {ZIP_PATH}")
+        except Exception as e:
+            print(f"Could not delete ZIP file: {e}")
+        try:
+            shutil.rmtree(UNZIP_DIR)
+            print(f"Deleted unzipped folder: {UNZIP_DIR}")
+        except Exception as e:
+            print(f"Could not delete unzipped folder: {e}")
+        print("Done.")
+
+def upload_local_to_etx():
     print(f"Uploading {LOCAL_TARGET_DIR} to {REMOTE_HOST}:{REMOTE_TARGET_DIR}...")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -163,29 +196,17 @@ def run_github_to_local_to_etx():
         print(f"Could not list remote directory: {e}")
     sftp.close()
     ssh.close()
-
     if delete_files:
-        # Delete the ZIP file
-        try:
-            os.remove(ZIP_PATH)
-            print(f"Deleted ZIP file: {ZIP_PATH}")
-        except Exception as e:
-            print(f"Could not delete ZIP file: {e}")
-        # Delete the unzipped folder
-
-        try:
-            shutil.rmtree(UNZIP_DIR)
-            print(f"Deleted unzipped folder: {UNZIP_DIR}")
-        except Exception as e:
-            print(f"Could not delete unzipped folder: {e}")
-        print("Done.")
-
         try:
             shutil.rmtree(LOCAL_TARGET_DIR)
             print(f"Deleted local target folder: {LOCAL_TARGET_DIR}")
         except Exception as e:
             print(f"Could not delete local target folder: {e}")
         print("Done.")
+
+def run_github_to_local_to_etx():
+    download_github_to_local()
+    upload_local_to_etx()
 
 if __name__ == "__main__":
     run_github_to_local_to_etx()

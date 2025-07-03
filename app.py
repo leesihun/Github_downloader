@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 
 # Import job functions
-from Github_to_Local_to_ETX import run_github_to_local_to_etx
+from Github_to_Local_to_ETX import download_github_to_local, upload_local_to_etx
 from run_ETX import run_remote_etx
 
 app = Flask(__name__)
@@ -66,13 +66,16 @@ def index():
 @app.route('/run_job', methods=['POST'])
 def run_job_route():
     job_type = request.json.get('job_type')
-    if job_type == 'github_to_local_to_etx':
-        job_id = run_job('github_to_local_to_etx', run_github_to_local_to_etx)
-    elif job_type == 'remote_etx':
-        job_id = run_job('remote_etx', run_remote_etx)
+    if job_type == 'github_to_local':
+        job_id = run_job('github_to_local', download_github_to_local)
+    elif job_type == 'local_to_etx':
+        job_id = run_job('local_to_etx', upload_local_to_etx)
+    elif job_type == 'run_etx_commands':
+        job_id = run_job('run_etx_commands', run_remote_etx)
     elif job_type == 'pipeline':
         def pipeline():
-            run_github_to_local_to_etx()
+            download_github_to_local()
+            upload_local_to_etx()
             run_remote_etx()
         job_id = run_job('pipeline', pipeline)
     else:
