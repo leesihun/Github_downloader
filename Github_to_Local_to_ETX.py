@@ -5,14 +5,6 @@ import paramiko
 import requests
 
 # ========== CONFIGURABLE VARIABLES ==========
-GITHUB_ZIP_URL = "https://github.com/leesihun/SimulGen-VAE/archive/refs/heads/main.zip"
-ZIP_PATH = r"C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main.zip"
-UNZIP_DIR = r"C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main"
-LOCAL_TARGET_DIR = r"D:/AI_projects/PCB_slit/ANN2"
-delete_files = True
-
-
-# ========== REMOTE SERVER CONFIGURABLE VARIABLES ==========
 def load_settings(settings_path="settings.txt"):
     settings = {}
     with open(settings_path, "r") as f:
@@ -37,16 +29,26 @@ def load_settings(settings_path="settings.txt"):
             continue
         if "=" in line:
             key, value = line.split("=", 1)
-            settings[key.strip()] = value.strip()
+            settings[key.strip().upper()] = value.strip()
         i += 1
+    # Type conversions
+    if "REMOTE_PORT" in settings:
+        settings["REMOTE_PORT"] = int(settings["REMOTE_PORT"])
+    if "DELETE_FILES" in settings:
+        settings["DELETE_FILES"] = settings["DELETE_FILES"].lower() in ("true", "1", "yes")
     return settings
 
 settings = load_settings()
+GITHUB_ZIP_URL = settings["GITHUB_ZIP_URL"]
+ZIP_PATH = settings["ZIP_PATH"]
+UNZIP_DIR = settings["UNZIP_DIR"]
+LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
+DELETE_FILES = settings.get("DELETE_FILES", True)
 REMOTE_HOST = settings["REMOTE_HOST"]
-REMOTE_PORT = int(settings.get("REMOTE_PORT", 22))
+REMOTE_PORT = settings["REMOTE_PORT"]
 REMOTE_USER = settings["REMOTE_USER"]
-REMOTE_PASS = settings["REMOTE_PASSWORD"]
-REMOTE_TARGET_DIR = "/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1"
+REMOTE_PASS = settings["REMOTE_PASS"]
+REMOTE_TARGET_DIR = settings["REMOTE_TARGET_DIR"]
 # ============================================
 
 def download_github_zip(url, dest_path):
@@ -123,7 +125,7 @@ def download_github_to_local():
     print(f"Copying files from {UNZIP_DIR} to {LOCAL_TARGET_DIR}...")
     copy_all(UNZIP_DIR, LOCAL_TARGET_DIR)
     print("Github to Local complete.")
-    if delete_files:
+    if DELETE_FILES:
         try:
             os.remove(ZIP_PATH)
             print(f"Deleted ZIP file: {ZIP_PATH}")
@@ -196,7 +198,7 @@ def upload_local_to_etx():
         print(f"Could not list remote directory: {e}")
     sftp.close()
     ssh.close()
-    if delete_files:
+    if DELETE_FILES:
         try:
             shutil.rmtree(LOCAL_TARGET_DIR)
             print(f"Deleted local target folder: {LOCAL_TARGET_DIR}")

@@ -1,13 +1,23 @@
-# SSH Settings
-REMOTE_HOST=202.20.185.100
-REMOTE_USER=s.hun.lee
-REMOTE_PASSWORD=atleast12!
+# ===== Github to Local =====
+GITHUB_ZIP_URL=https://github.com/leesihun/SimulGen-VAE/archive/refs/heads/main.zip
+ZIP_PATH=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main.zip
+UNZIP_DIR=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main
+LOCAL_TARGET_DIR=D:/AI_projects/PCB_slit/ANN2
+DELETE_FILES=True
 
-# Remote Commands (one per line, below)
+# ===== Local to ETX =====
+REMOTE_HOST=202.20.185.100
+REMOTE_PORT=22
+REMOTE_USER=s.hun.lee
+REMOTE_PASS=atleast12!
+REMOTE_TARGET_DIR=/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
+
+# ===== Run ETX Commands =====
+# (uses REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASS)
 REMOTE_COMMANDS=
 source ML_env/bin/activate
+cd ML_env/SimulGen-VAE/v3/PCB_slit/484_dataset/1
 ls
-cd ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
 cd ..
 ls
 cp -r 1 2
