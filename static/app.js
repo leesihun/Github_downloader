@@ -73,14 +73,17 @@ function updateHistory() {
         });
 }
 
-document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
-document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');
-document.getElementById('run-etx-commands').onclick = () => startJob('run_etx_commands');
-document.getElementById('delete-local-folders').onclick = () => startJob('delete_local_folders');
-document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
+function setJobButtonsEnabled(enabled) {
+    document.getElementById('run-github-to-local').disabled = !enabled;
+    document.getElementById('run-local-to-etx').disabled = !enabled;
+    document.getElementById('run-etx-commands').disabled = !enabled;
+    document.getElementById('delete-local-folders').disabled = !enabled;
+    document.getElementById('run-pipeline').disabled = !enabled;
+}
 
 document.getElementById('settings-form').onsubmit = function(e) {
     e.preventDefault();
+    setJobButtonsEnabled(false);
     const text = document.getElementById('settings-text').value;
     fetch('/settings', {
         method: 'POST',
@@ -90,10 +93,21 @@ document.getElementById('settings-form').onsubmit = function(e) {
     .then(data => {
         if (data.success) {
             document.getElementById('settings-status').textContent = 'Saved!';
-            setTimeout(() => document.getElementById('settings-status').textContent = '', 2000);
+            setTimeout(() => {
+                document.getElementById('settings-status').textContent = '';
+                setJobButtonsEnabled(true);
+            }, 1000);
+        } else {
+            setJobButtonsEnabled(true);
         }
     });
 };
+
+document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
+document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');
+document.getElementById('run-etx-commands').onclick = () => startJob('run_etx_commands');
+document.getElementById('delete-local-folders').onclick = () => startJob('delete_local_folders');
+document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
 
 window.onload = function() {
     updateHistory();

@@ -38,19 +38,6 @@ def load_settings(settings_path="settings.txt"):
         settings["DELETE_FILES"] = settings["DELETE_FILES"].lower() in ("true", "1", "yes")
     return settings
 
-settings = load_settings()
-GITHUB_ZIP_URL = settings["GITHUB_ZIP_URL"]
-ZIP_PATH = settings["ZIP_PATH"]
-UNZIP_DIR = settings["UNZIP_DIR"]
-LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
-DELETE_FILES = settings.get("DELETE_FILES", True)
-REMOTE_HOST = settings["REMOTE_HOST"]
-REMOTE_PORT = settings["REMOTE_PORT"]
-REMOTE_USER = settings["REMOTE_USER"]
-REMOTE_PASS = settings["REMOTE_PASS"]
-REMOTE_TARGET_DIR = settings["REMOTE_TARGET_DIR"]
-# ============================================
-
 def download_github_zip(url, dest_path):
     print(f"Downloading {url} ...")
     proxies = {
@@ -118,6 +105,11 @@ def sftp_upload_dir(sftp, local_dir, remote_dir):
     print(f"Upload summary: {success_files}/{total_files} files succeeded, {failed_files} failed.")
 
 def download_github_to_local():
+    settings = load_settings()
+    GITHUB_ZIP_URL = settings["GITHUB_ZIP_URL"]
+    ZIP_PATH = settings["ZIP_PATH"]
+    UNZIP_DIR = settings["UNZIP_DIR"]
+    LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
     print(f"Downloading {GITHUB_ZIP_URL} to {ZIP_PATH}...")
     download_github_zip(GITHUB_ZIP_URL, ZIP_PATH)
     print(f"Unzipping {ZIP_PATH} to {UNZIP_DIR}...")
@@ -127,6 +119,13 @@ def download_github_to_local():
     print("Github to Local complete.")
 
 def upload_local_to_etx():
+    settings = load_settings()
+    LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
+    REMOTE_HOST = settings["REMOTE_HOST"]
+    REMOTE_PORT = settings["REMOTE_PORT"]
+    REMOTE_USER = settings["REMOTE_USER"]
+    REMOTE_PASS = settings["REMOTE_PASS"]
+    REMOTE_TARGET_DIR = settings["REMOTE_TARGET_DIR"]
     print(f"Uploading {LOCAL_TARGET_DIR} to {REMOTE_HOST}:{REMOTE_TARGET_DIR}...")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -188,6 +187,10 @@ def upload_local_to_etx():
     ssh.close()
 
 def delete_local_folders():
+    settings = load_settings()
+    ZIP_PATH = settings["ZIP_PATH"]
+    UNZIP_DIR = settings["UNZIP_DIR"]
+    LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
     print("Deleting local folders and files...")
     for path in [ZIP_PATH, UNZIP_DIR, LOCAL_TARGET_DIR]:
         try:
