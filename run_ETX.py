@@ -1,26 +1,45 @@
+def load_settings(settings_path="settings.txt"):
+    settings = {}
+    with open(settings_path, "r") as f:
+        lines = f.readlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line and not line.startswith("#"):
+            if line.startswith("REMOTE_COMMANDS="):
+                # Multi-line value
+                commands = []
+                # Get the part after = on the same line, if any
+                cmd = line[len("REMOTE_COMMANDS="):].strip()
+                if cmd:
+                    commands.append(cmd)
+                i += 1
+                while i < len(lines):
+                    cmd_line = lines[i].strip()
+                    if cmd_line == '' or cmd_line.startswith('#'):
+                        i += 1
+                        continue
+                    # Stop if we hit another KEY=
+                    if '=' in cmd_line and not cmd_line.startswith(' '):
+                        break
+                    commands.append(cmd_line)
+                    i += 1
+                settings["REMOTE_COMMANDS"] = commands
+                continue
+            else:
+                key, value = line.split("=", 1)
+                settings[key.strip()] = value.strip()
+        i += 1
+    return settings
+
+settings = load_settings()
+REMOTE_HOST = settings["REMOTE_HOST"]
+REMOTE_USER = settings["REMOTE_USER"]
+REMOTE_PASSWORD = settings["REMOTE_PASSWORD"]
+commands = settings["REMOTE_COMMANDS"]
+
 import paramiko
 
-
-# ========== REMOTE SERVER CONFIGURABLE VARIABLES ==========
-REMOTE_HOST = "202.20.185.100"
-REMOTE_PORT = 22
-REMOTE_USER = "s.hun.lee"
-REMOTE_PASS = "atleast12!"
-REMOTE_TARGET_DIR = "/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v2/PCB_slit/484_dataset/github"
-commands = [
-    "source ML_env/bin/activate",
-    "cd ML_env/SimulGen-VAE/v3/PCB_slit/484_dataset/1",
-    "phd run -ng 1 -p shr_gpu -GR H100 -l %J.log python SimulGen-VAE.py --preset=1 --plot=2 --train_pinn_only=0 --size=small --load_all=1",
-    "cd ..",
-    "cd 2",
-    "phd run -ng 1 -p shr_gpu -GR H100 -l %J.log python SimulGen-VAE.py --preset=1 --plot=2 --train_pinn_only=0 --size=small --load_all=1"
-]
-# ============================================
-
-
-
-
-REMOTE_PASSWORD = REMOTE_PASS
 # The commands to run on the remote server
 
 # Connect to the remote server
@@ -30,6 +49,8 @@ ssh.connect(REMOTE_HOST, username=REMOTE_USER, password=REMOTE_PASSWORD)
 
 # Run each command and print output
 for cmd in commands:
+    if cmd.strip().startswith('#'):
+        continue
     print(f"\nRunning: {cmd}")
     stdin, stdout, stderr = ssh.exec_command(cmd)
     for line in stdout:

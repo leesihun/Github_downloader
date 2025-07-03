@@ -13,10 +13,21 @@ delete_files = True
 
 
 # ========== REMOTE SERVER CONFIGURABLE VARIABLES ==========
-REMOTE_HOST = "202.20.185.100"
-REMOTE_PORT = 22
-REMOTE_USER = "s.hun.lee"
-REMOTE_PASS = "atleast12!"
+def load_settings(settings_path="settings.txt"):
+    settings = {}
+    with open(settings_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                key, value = line.split("=", 1)
+                settings[key.strip()] = value.strip()
+    return settings
+
+settings = load_settings()
+REMOTE_HOST = settings["REMOTE_HOST"]
+REMOTE_PORT = int(settings.get("REMOTE_PORT", 22))
+REMOTE_USER = settings["REMOTE_USER"]
+REMOTE_PASS = settings["REMOTE_PASSWORD"]
 REMOTE_TARGET_DIR = "/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1"
 # ============================================
 
