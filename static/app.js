@@ -76,6 +76,7 @@ function updateHistory() {
 document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
 document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');
 document.getElementById('run-etx-commands').onclick = () => startJob('run_etx_commands');
+document.getElementById('delete-local-folders').onclick = () => startJob('delete_local_folders');
 document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
 
 document.getElementById('settings-form').onsubmit = function(e) {

@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 
 # Import job functions
-from Github_to_Local_to_ETX import download_github_to_local, upload_local_to_etx
+from Github_to_Local_to_ETX import download_github_to_local, upload_local_to_etx, delete_local_folders
 from run_ETX import run_remote_etx
 
 app = Flask(__name__)
@@ -72,6 +72,8 @@ def run_job_route():
         job_id = run_job('local_to_etx', upload_local_to_etx)
     elif job_type == 'run_etx_commands':
         job_id = run_job('run_etx_commands', run_remote_etx)
+    elif job_type == 'delete_local_folders':
+        job_id = run_job('delete_local_folders', delete_local_folders)
     elif job_type == 'pipeline':
         def pipeline():
             download_github_to_local()

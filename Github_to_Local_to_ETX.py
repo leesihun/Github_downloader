@@ -125,18 +125,6 @@ def download_github_to_local():
     print(f"Copying files from {UNZIP_DIR} to {LOCAL_TARGET_DIR}...")
     copy_all(UNZIP_DIR, LOCAL_TARGET_DIR)
     print("Github to Local complete.")
-    if DELETE_FILES:
-        try:
-            os.remove(ZIP_PATH)
-            print(f"Deleted ZIP file: {ZIP_PATH}")
-        except Exception as e:
-            print(f"Could not delete ZIP file: {e}")
-        try:
-            shutil.rmtree(UNZIP_DIR)
-            print(f"Deleted unzipped folder: {UNZIP_DIR}")
-        except Exception as e:
-            print(f"Could not delete unzipped folder: {e}")
-        print("Done.")
 
 def upload_local_to_etx():
     print(f"Uploading {LOCAL_TARGET_DIR} to {REMOTE_HOST}:{REMOTE_TARGET_DIR}...")
@@ -198,13 +186,20 @@ def upload_local_to_etx():
         print(f"Could not list remote directory: {e}")
     sftp.close()
     ssh.close()
-    if DELETE_FILES:
+
+def delete_local_folders():
+    print("Deleting local folders and files...")
+    for path in [ZIP_PATH, UNZIP_DIR, LOCAL_TARGET_DIR]:
         try:
-            shutil.rmtree(LOCAL_TARGET_DIR)
-            print(f"Deleted local target folder: {LOCAL_TARGET_DIR}")
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+                print(f"Deleted folder: {path}")
+            elif os.path.isfile(path):
+                os.remove(path)
+                print(f"Deleted file: {path}")
         except Exception as e:
-            print(f"Could not delete local target folder: {e}")
-        print("Done.")
+            print(f"Could not delete {path}: {e}")
+    print("Done.")
 
 def run_github_to_local_to_etx():
     download_github_to_local()
