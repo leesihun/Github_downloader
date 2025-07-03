@@ -17,7 +17,7 @@ REMOTE_HOST = "202.20.185.100"
 REMOTE_PORT = 22
 REMOTE_USER = "s.hun.lee"
 REMOTE_PASS = "atleast12!"
-REMOTE_TARGET_DIR = "/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v2/PCB_slit/484_dataset/github"
+REMOTE_TARGET_DIR = "/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1"
 # ============================================
 
 def download_github_zip(url, dest_path):
