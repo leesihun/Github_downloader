@@ -55,8 +55,14 @@
                 <div class="card-header">Edit settings.txt</div>
                 <div class="card-body">
                     <form id="settings-form">
-                        <textarea class="form-control mb-2" id="settings-text" rows="16">{{ settings }}</textarea>
-                        <button class="btn btn-outline-primary" type="submit">Save Settings</button>
+                        <label for="settings-text" class="form-label">Edit settings.txt</label>
+                        <textarea class="form-control mb-2" id="settings-text" rows="18">{{ settings }}</textarea>
+                        <div class="form-text mb-2">
+                            <b>PROJECT_URL</b>: Paste only the Github project URL (e.g. https://github.com/leesihun/SimulGen-VAE).<br>
+                            <b>LOCAL_SOURCE_DIR</b>: Local folder to upload to ETX.<br>
+                            <b>REMOTE_TARGET_DIRS</b>: List one remote target directory per line.<br>
+                            <b>Settings autosave after every change.</b>
+                        </div>
                         <span id="settings-status" class="ms-2"></span>
                     </form>
                 </div>

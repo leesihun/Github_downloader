@@ -8,12 +8,12 @@ def load_settings(settings_path="settings.txt"):
         if not line or line.startswith("#"):
             i += 1
             continue
-        if line.startswith("REMOTE_COMMANDS="):
-            # Multi-line value
-            commands = []
-            cmd = line[len("REMOTE_COMMANDS="):].strip()
-            if cmd:
-                commands.append(cmd)
+        if line.startswith("REMOTE_COMMANDS=") or line.startswith("REMOTE_TARGET_DIRS="):
+            key = line.split("=", 1)[0].strip().upper()
+            values = []
+            val = line[len(key)+1:].strip()
+            if val:
+                values.append(val)
             i += 1
             while i < len(lines):
                 cmd_line = lines[i].strip()
@@ -22,9 +22,9 @@ def load_settings(settings_path="settings.txt"):
                     continue
                 if '=' in cmd_line and not cmd_line.startswith(' '):
                     break
-                commands.append(cmd_line)
+                values.append(cmd_line)
                 i += 1
-            settings["REMOTE_COMMANDS"] = commands
+            settings[key] = values
             continue
         if "=" in line:
             key, value = line.split("=", 1)

@@ -1,5 +1,6 @@
 let currentJobId = null;
 let logInterval = null;
+let settingsSaveTimeout = null;
 
 function showStatus(msg, type='info') {
     const el = document.getElementById('job-status');
@@ -81,27 +82,29 @@ function setJobButtonsEnabled(enabled) {
     document.getElementById('run-pipeline').disabled = !enabled;
 }
 
-document.getElementById('settings-form').onsubmit = function(e) {
-    e.preventDefault();
+document.getElementById('settings-text').addEventListener('input', function() {
     setJobButtonsEnabled(false);
-    const text = document.getElementById('settings-text').value;
-    fetch('/settings', {
-        method: 'POST',
-        body: new URLSearchParams({settings: text})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('settings-status').textContent = 'Saved!';
-            setTimeout(() => {
-                document.getElementById('settings-status').textContent = '';
+    clearTimeout(settingsSaveTimeout);
+    settingsSaveTimeout = setTimeout(() => {
+        const text = document.getElementById('settings-text').value;
+        fetch('/settings', {
+            method: 'POST',
+            body: new URLSearchParams({settings: text})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('settings-status').textContent = 'Saved!';
+                setTimeout(() => {
+                    document.getElementById('settings-status').textContent = '';
+                    setJobButtonsEnabled(true);
+                }, 1000);
+            } else {
                 setJobButtonsEnabled(true);
-            }, 1000);
-        } else {
-            setJobButtonsEnabled(true);
-        }
-    });
-};
+            }
+        });
+    }, 600); // Debounce: 600ms after last change
+});
 
 document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
 document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');

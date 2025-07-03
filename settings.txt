@@ -1,16 +1,20 @@
 # ===== Github to Local =====
-GITHUB_ZIP_URL=https://github.com/leesihun/SimulGen-VAE/archive/refs/heads/main.zip
+PROJECT_URL=https://github.com/leesihun/SimulGen-VAE
 ZIP_PATH=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main.zip
 UNZIP_DIR=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main
 LOCAL_TARGET_DIR=D:/AI_projects/PCB_slit/ANN2
 DELETE_FILES=False
 
 # ===== Local to ETX =====
+LOCAL_SOURCE_DIR=D:/AI_projects/PCB_slit/ANN2
 REMOTE_HOST=202.20.185.100
 REMOTE_PORT=22
 REMOTE_USER=s.hun.lee
 REMOTE_PASS=atleast12!
-REMOTE_TARGET_DIR=/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
+# List one remote target dir per line below:
+REMOTE_TARGET_DIRS=
+/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
+/home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/2
 
 # ===== Run ETX Commands =====
 # (uses REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASS)

@@ -15,17 +15,23 @@ def load_settings(settings_path="settings.txt"):
         if not line or line.startswith("#"):
             i += 1
             continue
-        if line.startswith("REMOTE_COMMANDS="):
-            # Skip multi-line commands for this script
+        if line.startswith("REMOTE_COMMANDS=") or line.startswith("REMOTE_TARGET_DIRS="):
+            key = line.split("=", 1)[0].strip().upper()
+            values = []
+            val = line[len(key)+1:].strip()
+            if val:
+                values.append(val)
             i += 1
             while i < len(lines):
                 cmd_line = lines[i].strip()
-                if not cmd_line or cmd_line.startswith("#"):
+                if not cmd_line or cmd_line.startswith('#'):
                     i += 1
                     continue
-                if "=" in cmd_line and not cmd_line.startswith(" "):
+                if '=' in cmd_line and not cmd_line.startswith(' '):
                     break
+                values.append(cmd_line)
                 i += 1
+            settings[key] = values
             continue
         if "=" in line:
             key, value = line.split("=", 1)
@@ -104,14 +110,19 @@ def sftp_upload_dir(sftp, local_dir, remote_dir):
                 failed_files += 1
     print(f"Upload summary: {success_files}/{total_files} files succeeded, {failed_files} failed.")
 
+def github_zip_url_from_project_url(project_url):
+    # e.g. https://github.com/leesihun/SimulGen-VAE -> https://github.com/leesihun/SimulGen-VAE/archive/refs/heads/main.zip
+    return project_url.rstrip('/') + '/archive/refs/heads/main.zip'
+
 def download_github_to_local():
     settings = load_settings()
-    GITHUB_ZIP_URL = settings["GITHUB_ZIP_URL"]
+    PROJECT_URL = settings["PROJECT_URL"]
     ZIP_PATH = settings["ZIP_PATH"]
     UNZIP_DIR = settings["UNZIP_DIR"]
     LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
-    print(f"Downloading {GITHUB_ZIP_URL} to {ZIP_PATH}...")
-    download_github_zip(GITHUB_ZIP_URL, ZIP_PATH)
+    ZIP_URL = github_zip_url_from_project_url(PROJECT_URL)
+    print(f"Downloading {ZIP_URL} to {ZIP_PATH}...")
+    download_github_zip(ZIP_URL, ZIP_PATH)
     print(f"Unzipping {ZIP_PATH} to {UNZIP_DIR}...")
     unzip_file(ZIP_PATH, UNZIP_DIR)
     print(f"Copying files from {UNZIP_DIR} to {LOCAL_TARGET_DIR}...")
@@ -120,13 +131,13 @@ def download_github_to_local():
 
 def upload_local_to_etx():
     settings = load_settings()
-    LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
+    LOCAL_SOURCE_DIR = settings["LOCAL_SOURCE_DIR"]
     REMOTE_HOST = settings["REMOTE_HOST"]
     REMOTE_PORT = settings["REMOTE_PORT"]
     REMOTE_USER = settings["REMOTE_USER"]
     REMOTE_PASS = settings["REMOTE_PASS"]
-    REMOTE_TARGET_DIR = settings["REMOTE_TARGET_DIR"]
-    print(f"Uploading {LOCAL_TARGET_DIR} to {REMOTE_HOST}:{REMOTE_TARGET_DIR}...")
+    REMOTE_TARGET_DIRS = settings["REMOTE_TARGET_DIRS"] if isinstance(settings["REMOTE_TARGET_DIRS"], list) else [settings["REMOTE_TARGET_DIRS"]]
+    print(f"Uploading {LOCAL_SOURCE_DIR} to remote targets:")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -148,41 +159,39 @@ def upload_local_to_etx():
         print(f"Failed to open SFTP session: {e}")
         ssh.close()
         return
-    # Ensure remote target dir exists
-    try:
-        sftp.stat(REMOTE_TARGET_DIR)
-    except FileNotFoundError:
-        # Recursively create directories
-        dirs = REMOTE_TARGET_DIR.strip('/').split('/')
-        path = ''
-        for d in dirs:
-            path += '/' + d
-            try:
-                sftp.stat(path)
-            except FileNotFoundError:
+    for REMOTE_TARGET_DIR in REMOTE_TARGET_DIRS:
+        print(f"Uploading to {REMOTE_TARGET_DIR}...")
+        # Ensure remote target dir exists
+        try:
+            sftp.stat(REMOTE_TARGET_DIR)
+        except FileNotFoundError:
+            # Recursively create directories
+            dirs = REMOTE_TARGET_DIR.strip('/').split('/')
+            path = ''
+            for d in dirs:
+                path += '/' + d
                 try:
-                    sftp.mkdir(path)
-                    print(f"Created remote directory: {path}")
-                except Exception as e:
-                    print(f"Failed to create remote directory {path}: {e}")
-                    sftp.close()
-                    ssh.close()
-                    return
-    try:
-        sftp_upload_dir(sftp, LOCAL_TARGET_DIR, REMOTE_TARGET_DIR)
-        print("Upload completed.")
-    except Exception as e:
-        print(f"Error during file upload: {e}")
-        sftp.close()
-        ssh.close()
-        return
-    # Verification: List remote files
-    try:
-        print("Remote directory contents after upload:")
-        for entry in sftp.listdir_attr(REMOTE_TARGET_DIR):
-            print(f"  {entry.filename}")
-    except Exception as e:
-        print(f"Could not list remote directory: {e}")
+                    sftp.stat(path)
+                except FileNotFoundError:
+                    try:
+                        sftp.mkdir(path)
+                        print(f"Created remote directory: {path}")
+                    except Exception as e:
+                        print(f"Failed to create remote directory {path}: {e}")
+                        continue
+        try:
+            sftp_upload_dir(sftp, LOCAL_SOURCE_DIR, REMOTE_TARGET_DIR)
+            print(f"Upload to {REMOTE_TARGET_DIR} completed.")
+        except Exception as e:
+            print(f"Error during file upload to {REMOTE_TARGET_DIR}: {e}")
+            continue
+        # Verification: List remote files
+        try:
+            print(f"Remote directory contents after upload to {REMOTE_TARGET_DIR}:")
+            for entry in sftp.listdir_attr(REMOTE_TARGET_DIR):
+                print(f"  {entry.filename}")
+        except Exception as e:
+            print(f"Could not list remote directory {REMOTE_TARGET_DIR}: {e}")
     sftp.close()
     ssh.close()
 
@@ -191,8 +200,11 @@ def delete_local_folders():
     ZIP_PATH = settings["ZIP_PATH"]
     UNZIP_DIR = settings["UNZIP_DIR"]
     LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
+    LOCAL_SOURCE_DIR = settings.get("LOCAL_SOURCE_DIR", None)
     print("Deleting local folders and files...")
-    for path in [ZIP_PATH, UNZIP_DIR, LOCAL_TARGET_DIR]:
+    for path in [ZIP_PATH, UNZIP_DIR, LOCAL_TARGET_DIR, LOCAL_SOURCE_DIR]:
+        if not path:
+            continue
         try:
             if os.path.isdir(path):
                 shutil.rmtree(path)
