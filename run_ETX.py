@@ -1,64 +1,78 @@
-def load_settings(settings_path="settings.txt"):
-    settings = {}
-    with open(settings_path, "r") as f:
-        lines = f.readlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if line and not line.startswith("#"):
-            if line.startswith("REMOTE_COMMANDS="):
-                # Multi-line value
-                commands = []
-                # Get the part after = on the same line, if any
-                cmd = line[len("REMOTE_COMMANDS="):].strip()
-                if cmd:
-                    commands.append(cmd)
-                i += 1
-                while i < len(lines):
-                    cmd_line = lines[i].strip()
-                    if cmd_line == '' or cmd_line.startswith('#'):
-                        i += 1
-                        continue
-                    # Stop if we hit another KEY=
-                    if '=' in cmd_line and not cmd_line.startswith(' '):
-                        break
-                    commands.append(cmd_line)
+def run_remote_etx():
+    import paramiko
+    from concurrent.futures import ThreadPoolExecutor
+
+    def load_settings(settings_path="settings.txt"):
+        settings = {}
+        with open(settings_path, "r") as f:
+            lines = f.readlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            if line and not line.startswith("#"):
+                if line.startswith("REMOTE_COMMANDS="):
+                    # Multi-line value, handled separately
                     i += 1
-                settings["REMOTE_COMMANDS"] = commands
+                    continue
+                else:
+                    key, value = line.split("=", 1)
+                    settings[key.strip()] = value.strip()
+            i += 1
+        return settings
+
+    def load_command_groups(settings_path="settings.txt"):
+        with open(settings_path, "r") as f:
+            lines = f.readlines()
+        groups = []
+        current = []
+        in_commands = False
+        for line in lines:
+            line = line.rstrip('\n')
+            if line.strip().startswith("REMOTE_COMMANDS="):
+                in_commands = True
                 continue
-            else:
-                key, value = line.split("=", 1)
-                settings[key.strip()] = value.strip()
-        i += 1
-    return settings
+            if not in_commands:
+                continue
+            if line.strip() == "" and current:
+                groups.append(current)
+                current = []
+            elif line.strip() and not line.strip().startswith("#"):
+                current.append(line.strip())
+        if current:
+            groups.append(current)
+        return groups
 
-settings = load_settings()
-REMOTE_HOST = settings["REMOTE_HOST"]
-REMOTE_USER = settings["REMOTE_USER"]
-REMOTE_PASSWORD = settings["REMOTE_PASSWORD"]
-commands = settings["REMOTE_COMMANDS"]
+    def run_ssh_commands(commands, host, user, password, session_id=None):
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(host, username=user, password=password)
+        command_str = " && ".join(commands)
+        print(f"\n[Session {session_id}] Running: {command_str}\n")
+        stdin, stdout, stderr = ssh.exec_command(command_str)
+        for line in stdout:
+            print(f"[Session {session_id}] {line}", end="")
+        for line in stderr:
+            print(f"[Session {session_id}][stderr] {line}", end="")
+        ssh.close()
+        print(f"[Session {session_id}] Finished.\n")
 
-import paramiko
+    settings = load_settings()
+    REMOTE_HOST = settings["REMOTE_HOST"]
+    REMOTE_USER = settings["REMOTE_USER"]
+    REMOTE_PASSWORD = settings["REMOTE_PASSWORD"]
 
-# The commands to run on the remote server
+    command_groups = load_command_groups()
 
-# Connect to the remote server
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(REMOTE_HOST, username=REMOTE_USER, password=REMOTE_PASSWORD)
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for idx, group in enumerate(command_groups, 1):
+            futures.append(executor.submit(run_ssh_commands, group, REMOTE_HOST, REMOTE_USER, REMOTE_PASSWORD, idx))
+        # Wait for all to finish
+        for future in futures:
+            future.result()
 
-# Filter out comment lines
-real_commands = [cmd for cmd in commands if not cmd.strip().startswith('#')]
-# Join commands with '&&' so each runs only if the previous succeeds
-command_str = " && ".join(real_commands)
-print(f"\nRunning all commands in one shell:\n{command_str}\n")
-stdin, stdout, stderr = ssh.exec_command(command_str)
-for line in stdout:
-    print(line, end="")
-for line in stderr:
-    print(line, end="")
+    print("\nAll SSH sessions completed. The connection will remain open until you press Enter.")
+    input("Press Enter to close the connection...")
 
-print("\nAll commands executed. The connection will remain open until you press Enter.")
-input("Press Enter to close the connection...")
-
-ssh.close()
+if __name__ == "__main__":
+    run_remote_etx()

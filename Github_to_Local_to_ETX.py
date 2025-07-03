@@ -97,7 +97,7 @@ def sftp_upload_dir(sftp, local_dir, remote_dir):
                 failed_files += 1
     print(f"Upload summary: {success_files}/{total_files} files succeeded, {failed_files} failed.")
 
-def main():
+def run_github_to_local_to_etx():
     print(f"Downloading {GITHUB_ZIP_URL} to {ZIP_PATH}...")
     download_github_zip(GITHUB_ZIP_URL, ZIP_PATH)
     print(f"Unzipping {ZIP_PATH} to {UNZIP_DIR}...")
@@ -188,4 +188,4 @@ def main():
         print("Done.")
 
 if __name__ == "__main__":
-    main()
+    run_github_to_local_to_etx()
