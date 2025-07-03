@@ -37,6 +37,7 @@ def load_settings(settings_path="settings.txt"):
 
 def run_remote_etx():
     import paramiko
+    import time
     from concurrent.futures import ThreadPoolExecutor
 
     settings = load_settings()
@@ -45,6 +46,25 @@ def run_remote_etx():
     REMOTE_USER = settings["REMOTE_USER"]
     REMOTE_PASSWORD = settings["REMOTE_PASS"]
     commands = settings["REMOTE_COMMANDS"]
+
+    # Detect if there are two or more consecutive blank lines (multi-threaded job)
+    blocks = []
+    current = []
+    blank_count = 0
+    for cmd in commands:
+        if cmd.strip() == '':
+            blank_count += 1
+            if blank_count >= 2 and current:
+                blocks.append(current)
+                current = []
+        else:
+            if blank_count >= 2 and current:
+                blocks.append(current)
+                current = []
+            blank_count = 0
+            current.append(cmd)
+    if current:
+        blocks.append(current)
 
     def run_ssh_commands(commands, host, port, user, password, session_id=None):
         ssh = paramiko.SSHClient()
@@ -60,27 +80,20 @@ def run_remote_etx():
         ssh.close()
         print(f"[Session {session_id}] Finished.\n")
 
-    command_groups = []
-    group = []
-    for cmd in commands:
-        if cmd.strip() == '':
-            if group:
-                command_groups.append(group)
-                group = []
-        else:
-            group.append(cmd)
-    if group:
-        command_groups.append(group)
+    if len(blocks) > 1:
+        # Multi-threaded
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for idx, group in enumerate(blocks, 1):
+                futures.append(executor.submit(run_ssh_commands, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, idx))
+            for future in futures:
+                future.result()
+    else:
+        # Single-threaded
+        run_ssh_commands(commands, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, 1)
 
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        for idx, group in enumerate(command_groups, 1):
-            futures.append(executor.submit(run_ssh_commands, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, idx))
-        for future in futures:
-            future.result()
-
-    print("\nAll SSH sessions completed. The connection will remain open until you press Enter.")
-    input("Press Enter to close the connection...")
+    print("\nAll SSH sessions completed. The window will close in 5 seconds.")
+    time.sleep(5)
 
 if __name__ == "__main__":
     run_remote_etx()
