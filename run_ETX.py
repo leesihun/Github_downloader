@@ -47,16 +47,16 @@ ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh.connect(REMOTE_HOST, username=REMOTE_USER, password=REMOTE_PASSWORD)
 
-# Run each command and print output
-for cmd in commands:
-    if cmd.strip().startswith('#'):
-        continue
-    print(f"\nRunning: {cmd}")
-    stdin, stdout, stderr = ssh.exec_command(cmd)
-    for line in stdout:
-        print(line, end="")
-    for line in stderr:
-        print(line, end="")
+# Filter out comment lines
+real_commands = [cmd for cmd in commands if not cmd.strip().startswith('#')]
+# Join commands with '&&' so each runs only if the previous succeeds
+command_str = " && ".join(real_commands)
+print(f"\nRunning all commands in one shell:\n{command_str}\n")
+stdin, stdout, stderr = ssh.exec_command(command_str)
+for line in stdout:
+    print(line, end="")
+for line in stderr:
+    print(line, end="")
 
 print("\nAll commands executed. The connection will remain open until you press Enter.")
 input("Press Enter to close the connection...")
