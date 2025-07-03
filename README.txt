@@ -14,16 +14,14 @@
 
 4. The .exe will be in the dist/ folder as run_dashboard.exe
 
-5. To access the app at http://autosupercom:5000, edit your hosts file:
+5. To access the app at http://autosupercom, edit your hosts file:
    - Open C:\Windows\System32\drivers\etc\hosts as Administrator
    - Add this line:
      127.0.0.1   autosupercom
    - Save the file
 
-6. Double-click run_dashboard.exe to start the server in the background.
+6. Double-click run_dashboard.exe **as Administrator** to start the server in the background (port 80 requires admin privileges).
 
-7. Open your browser to http://autosupercom:5000
+7. Open your browser to http://autosupercom
 
-# Optional: Use port 80 for http://autosupercom (no :5000)
-- Edit run_dashboard.py to use port=80
-- Run as Administrator 
+# You only need to click the .exe and visit http://autosupercom 
