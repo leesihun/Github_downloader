@@ -1,27 +1,20 @@
-# How to Build and Run the ETX Dashboard as an .exe
+# How to Use the ETX Dashboard
 
-1. Install PyInstaller (if not already):
-   pip install pyinstaller
+1. Make sure all files and folders are in the same directory as run_dashboard.exe (including templates/, static/, settings.txt, etc).
 
-2. Place your custom icon file (e.g., autosupercom.ico) in the project root.
+2. Double-click run_dashboard.exe **as Administrator** to start the server in the background (port 80 requires admin privileges).
 
-3. Build the .exe:
-   pyinstaller --noconsole --onefile --icon=autosupercom.ico run_dashboard.py
+3. Open your browser and go to:
+   http://127.0.0.1
 
-   - --noconsole: Runs in the background (no black window)
-   - --onefile: Single .exe output
-   - --icon: Sets the custom icon for the .exe
+4. Use the dashboard as normal. All settings and job controls are available in the web interface.
 
-4. The .exe will be in the dist/ folder as run_dashboard.exe
-
-5. To access the app at http://autosupercom, edit your hosts file:
-   - Open C:\Windows\System32\drivers\etc\hosts as Administrator
-   - Add this line:
-     127.0.0.1   autosupercom
-   - Save the file
-
-6. Double-click run_dashboard.exe **as Administrator** to start the server in the background (port 80 requires admin privileges).
-
-7. Open your browser to http://autosupercom
-
-# You only need to click the .exe and visit http://autosupercom 
+# Notes
+- The .exe is already built and provided for you. No need to install Python or build anything.
+- If you want to use a custom local domain (e.g., http://autosupercom), edit your hosts file:
+  - Open C:\Windows\System32\drivers\etc\hosts as Administrator
+  - Add this line:
+    127.0.0.1   autosupercom
+  - Save the file
+  - Then visit http://autosupercom in your browser.
+- If you want to update the dashboard logic, edit the Python source files and rebuild the .exe using PyInstaller (see previous instructions if needed). 
