@@ -9,8 +9,8 @@ DELETE_FILES=False
 LOCAL_SOURCE_DIR=D:/AI_projects/PCB_slit/ANN2
 REMOTE_HOST=202.20.185.100
 REMOTE_PORT=22
-REMOTE_USER=s.hun.lee
-REMOTE_PASS=atleast12!
+REMOTE_USER=YourName
+REMOTE_PASS=YourPW
 # List one remote target dir per line below:
 REMOTE_TARGET_DIRS=
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
