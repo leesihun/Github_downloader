@@ -3,6 +3,7 @@ import shutil
 import zipfile
 import paramiko
 import requests
+import time
 
 # ========== CONFIGURABLE VARIABLES ==========
 def load_settings(settings_path="settings.txt"):
@@ -47,7 +48,7 @@ def load_settings(settings_path="settings.txt"):
 def download_github_zip(url, dest_path):
     print(f"Downloading {url} ...")
     proxies = {
-        "http": "http://168.219.61.252:8080",
+        "http": "http://168.219.61.252:",
         "https": "http://168.219.61.252:8080"
     }
     try:
@@ -121,13 +122,24 @@ def download_github_to_local():
     UNZIP_DIR = settings["UNZIP_DIR"]
     LOCAL_TARGET_DIR = settings["LOCAL_TARGET_DIR"]
     ZIP_URL = github_zip_url_from_project_url(PROJECT_URL)
-    print(f"Downloading {ZIP_URL} to {ZIP_PATH}...")
-    download_github_zip(ZIP_URL, ZIP_PATH)
-    print(f"Unzipping {ZIP_PATH} to {UNZIP_DIR}...")
-    unzip_file(ZIP_PATH, UNZIP_DIR)
-    print(f"Copying files from {UNZIP_DIR} to {LOCAL_TARGET_DIR}...")
-    copy_all(UNZIP_DIR, LOCAL_TARGET_DIR)
-    print("Github to Local complete.")
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"[Attempt {attempt}] Downloading {ZIP_URL} to {ZIP_PATH}...")
+            download_github_zip(ZIP_URL, ZIP_PATH)
+            print(f"[Attempt {attempt}] Unzipping {ZIP_PATH} to {UNZIP_DIR}...")
+            unzip_file(ZIP_PATH, UNZIP_DIR)
+            print(f"[Attempt {attempt}] Copying files from {UNZIP_DIR} to {LOCAL_TARGET_DIR}...")
+            copy_all(UNZIP_DIR, LOCAL_TARGET_DIR)
+            print("Github to Local complete.")
+            break
+        except Exception as e:
+            print(f"[Attempt {attempt}] Error: {e}")
+            if attempt < max_retries:
+                print("Retrying in 2 seconds...")
+                time.sleep(2)
+            else:
+                print("All attempts failed. Giving up.")
 
 def upload_local_to_etx():
     settings = load_settings()

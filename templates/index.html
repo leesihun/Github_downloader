@@ -55,14 +55,55 @@
                 <div class="card-header">Edit settings.txt</div>
                 <div class="card-body">
                     <form id="settings-form">
-                        <label for="settings-text" class="form-label">Edit settings.txt</label>
-                        <textarea class="form-control mb-2" id="settings-text" rows="18">{{ settings }}</textarea>
-                        <div class="form-text mb-2">
-                            <b>PROJECT_URL</b>: Paste only the Github project URL (e.g. https://github.com/leesihun/SimulGen-VAE).<br>
-                            <b>LOCAL_SOURCE_DIR</b>: Local folder to upload to ETX.<br>
-                            <b>REMOTE_TARGET_DIRS</b>: List one remote target directory per line.<br>
-                            <b>Settings autosave after every change.</b>
+                        <div class="mb-2">
+                            <label for="PROJECT_URL" class="form-label">Project URL</label>
+                            <input type="text" class="form-control" id="PROJECT_URL" name="PROJECT_URL">
                         </div>
+                        <div class="mb-2">
+                            <label for="ZIP_PATH" class="form-label">ZIP Path</label>
+                            <input type="text" class="form-control" id="ZIP_PATH" name="ZIP_PATH">
+                        </div>
+                        <div class="mb-2">
+                            <label for="UNZIP_DIR" class="form-label">Unzip Directory</label>
+                            <input type="text" class="form-control" id="UNZIP_DIR" name="UNZIP_DIR">
+                        </div>
+                        <div class="mb-2">
+                            <label for="LOCAL_TARGET_DIR" class="form-label">Local Target Directory</label>
+                            <input type="text" class="form-control" id="LOCAL_TARGET_DIR" name="LOCAL_TARGET_DIR">
+                        </div>
+                        <div class="mb-2">
+                            <label for="DELETE_FILES" class="form-label">Delete Files After Download</label>
+                            <input type="checkbox" class="form-check-input" id="DELETE_FILES" name="DELETE_FILES">
+                        </div>
+                        <div class="mb-2">
+                            <label for="LOCAL_SOURCE_DIR" class="form-label">Local Source Directory (for upload)</label>
+                            <input type="text" class="form-control" id="LOCAL_SOURCE_DIR" name="LOCAL_SOURCE_DIR">
+                        </div>
+                        <div class="mb-2">
+                            <label for="REMOTE_HOST" class="form-label">Remote Host</label>
+                            <input type="text" class="form-control" id="REMOTE_HOST" name="REMOTE_HOST">
+                        </div>
+                        <div class="mb-2">
+                            <label for="REMOTE_PORT" class="form-label">Remote Port</label>
+                            <input type="number" class="form-control" id="REMOTE_PORT" name="REMOTE_PORT">
+                        </div>
+                        <div class="mb-2">
+                            <label for="REMOTE_USER" class="form-label">Remote User</label>
+                            <input type="text" class="form-control" id="REMOTE_USER" name="REMOTE_USER">
+                        </div>
+                        <div class="mb-2">
+                            <label for="REMOTE_PASS" class="form-label">Remote Password</label>
+                            <input type="password" class="form-control" id="REMOTE_PASS" name="REMOTE_PASS">
+                        </div>
+                        <div class="mb-2">
+                            <label for="REMOTE_TARGET_DIRS" class="form-label">Remote Target Directories (one per line)</label>
+                            <textarea class="form-control" id="REMOTE_TARGET_DIRS" name="REMOTE_TARGET_DIRS" rows="3"></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label for="REMOTE_COMMANDS" class="form-label">Remote Commands (one per line, blank lines for parallel blocks)</label>
+                            <textarea class="form-control" id="REMOTE_COMMANDS" name="REMOTE_COMMANDS" rows="5"></textarea>
+                        </div>
+                        <button class="btn btn-outline-primary" type="submit">Save Settings</button>
                         <span id="settings-status" class="ms-2"></span>
                     </form>
                 </div>

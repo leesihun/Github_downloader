@@ -82,29 +82,54 @@ function setJobButtonsEnabled(enabled) {
     document.getElementById('run-pipeline').disabled = !enabled;
 }
 
-document.getElementById('settings-text').addEventListener('input', function() {
-    setJobButtonsEnabled(false);
-    clearTimeout(settingsSaveTimeout);
-    settingsSaveTimeout = setTimeout(() => {
-        const text = document.getElementById('settings-text').value;
-        fetch('/settings', {
-            method: 'POST',
-            body: new URLSearchParams({settings: text})
-        })
+function loadSettingsForm() {
+    fetch('/settings_json')
         .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('settings-status').textContent = 'Saved!';
-                setTimeout(() => {
-                    document.getElementById('settings-status').textContent = '';
-                    setJobButtonsEnabled(true);
-                }, 1000);
-            } else {
-                setJobButtonsEnabled(true);
+        .then(settings => {
+            for (const key in settings) {
+                const el = document.getElementById(key);
+                if (!el) continue;
+                if (el.type === 'checkbox') {
+                    el.checked = (settings[key] === true || settings[key] === 'true' || settings[key] === 1 || settings[key] === '1');
+                } else if (el.tagName === 'TEXTAREA' && Array.isArray(settings[key])) {
+                    el.value = settings[key].join('\n');
+                } else {
+                    el.value = settings[key];
+                }
             }
         });
-    }, 600); // Debounce: 600ms after last change
-});
+}
+
+document.getElementById('settings-form').onsubmit = function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {};
+    for (const el of form.elements) {
+        if (!el.name) continue;
+        if (el.type === 'checkbox') {
+            data[el.name] = el.checked;
+        } else if (el.tagName === 'TEXTAREA') {
+            // Split by newlines, filter empty lines
+            data[el.name] = el.value.split(/\r?\n/).filter(x => x.length > 0);
+        } else {
+            data[el.name] = el.value;
+        }
+    }
+    fetch('/settings_json', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('settings-status').textContent = 'Saved!';
+            setTimeout(() => {
+                document.getElementById('settings-status').textContent = '';
+            }, 1000);
+        }
+    });
+};
 
 document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
 document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');
@@ -113,5 +138,6 @@ document.getElementById('delete-local-folders').onclick = () => startJob('delete
 document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
 
 window.onload = function() {
+    loadSettingsForm();
     updateHistory();
 }; 

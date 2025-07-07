@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
+import re
 
 # Import job functions
 from Github_to_Local_to_ETX import download_github_to_local, upload_local_to_etx, delete_local_folders
@@ -117,6 +118,61 @@ def settings_route():
 def read_settings():
     with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
         return f.read()
+
+def parse_settings_txt_to_json(settings_txt):
+    settings = {}
+    key = None
+    values = []
+    for line in settings_txt.splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        if '=' in line:
+            if key:
+                if len(values) == 1:
+                    settings[key] = values[0]
+                else:
+                    settings[key] = values
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip()
+            if value:
+                values = [value]
+            else:
+                values = []
+        else:
+            values.append(line)
+    if key:
+        if len(values) == 1:
+            settings[key] = values[0]
+        else:
+            settings[key] = values
+    return settings
+
+def write_settings_json_to_txt(settings):
+    lines = []
+    for k, v in settings.items():
+        if isinstance(v, list):
+            lines.append(f"{k}=")
+            for item in v:
+                lines.append(str(item))
+        else:
+            lines.append(f"{k}={v}")
+    return '\n'.join(lines) + '\n'
+
+@app.route('/settings_json', methods=['GET', 'POST'])
+def settings_json_route():
+    if request.method == 'POST':
+        settings = request.json
+        txt = write_settings_json_to_txt(settings)
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            f.write(txt)
+        return jsonify({'success': True})
+    else:
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            txt = f.read()
+        settings = parse_settings_txt_to_json(txt)
+        return jsonify(settings)
 
 # Static files for frontend
 @app.route('/static/<path:path>')

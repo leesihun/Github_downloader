@@ -8,6 +8,7 @@
    http://127.0.0.1
 
 4. Use the dashboard as normal. All settings and job controls are available in the web interface.
+   - To change settings, use the Settings form on the right side of the dashboard. Each parameter has its own field.
 
 # Notes
 - The .exe is already built and provided for you. No need to install Python or build anything.
