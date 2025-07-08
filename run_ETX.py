@@ -78,6 +78,15 @@ def run_remote_etx(hostname=None):
     commands = settings["REMOTE_COMMANDS"]
     
     print(f"Connecting to: {REMOTE_HOST}:{REMOTE_PORT}")  # Debug info
+    
+    # SSH execution mode configuration
+    # Enhanced mode: Uses persistent shell sessions like MobaXterm (recommended for job schedulers)
+    # Legacy mode: Uses exec_command for simple command execution (original behavior)
+    USE_ENHANCED_SSH = True  # Change to False to use legacy mode
+    
+    print(f"Using {'Enhanced' if USE_ENHANCED_SSH else 'Legacy'} SSH mode")
+    if USE_ENHANCED_SSH:
+        print("Enhanced mode: Persistent shell sessions for job scheduler compatibility")
 
     # Detect if there are two or more consecutive blank lines (multi-threaded job)
     blocks = []
@@ -99,6 +108,88 @@ def run_remote_etx(hostname=None):
         blocks.append(current)
 
     def run_ssh_commands(commands, host, port, user, password, session_id=None):
+        """
+        Enhanced SSH command execution that mimics MobaXterm behavior
+        Uses persistent shell sessions for better job scheduler compatibility
+        """
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        try:
+            # Connect with additional options for better compatibility
+            ssh.connect(
+                host, 
+                port=port, 
+                username=user, 
+                password=password,
+                timeout=30,
+                allow_agent=False,
+                look_for_keys=False
+            )
+            print(f"[Session {session_id}] Connected to {host}:{port}")
+            
+            # Create persistent shell session (like MobaXterm)
+            shell = ssh.invoke_shell(term='xterm', width=120, height=30)
+            
+            # Wait for shell to be ready
+            time.sleep(2)
+            
+            # Clear any initial output
+            if shell.recv_ready():
+                initial = shell.recv(4096).decode('utf-8', errors='ignore')
+                print(f"[Session {session_id}] Connection established")
+            
+            # Execute commands in sequence within the same shell
+            for i, command in enumerate(commands):
+                if not command.strip():
+                    continue
+                    
+                print(f"[Session {session_id}] Command {i+1}: {command}")
+                
+                # Send command
+                shell.send(command + '\n')
+                
+                # Collect output with real-time display
+                output = ""
+                start_time = time.time()
+                max_wait = 60  # Increased timeout for job submissions
+                
+                while time.time() - start_time < max_wait:
+                    if shell.recv_ready():
+                        chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                        output += chunk
+                        print(chunk, end='')  # Real-time output like MobaXterm
+                    else:
+                        time.sleep(0.1)
+                        
+                    # Check for common shell prompt patterns
+                    if output and any(pattern in output[-20:] for pattern in ['$ ', '> ', '# ', '] ', ') ']):
+                        break
+                
+                if time.time() - start_time >= max_wait:
+                    print(f"[Session {session_id}] Command timed out after {max_wait}s")
+                
+                # Small delay between commands
+                time.sleep(0.5)
+            
+            # Graceful logout
+            shell.send('exit\n')
+            time.sleep(1)
+            shell.close()
+            
+        except Exception as e:
+            print(f"[Session {session_id}] Error: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            ssh.close()
+            print(f"[Session {session_id}] Session completed")
+
+    def run_ssh_commands_legacy(commands, host, port, user, password, session_id=None):
+        """
+        Legacy implementation using exec_command (original behavior)
+        Kept for fallback compatibility
+        """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(host, port=port, username=user, password=password)
@@ -112,17 +203,20 @@ def run_remote_etx(hostname=None):
         ssh.close()
         print(f"[Session {session_id}] Finished.\n")
 
+    # Choose SSH function based on configuration
+    ssh_function = run_ssh_commands if USE_ENHANCED_SSH else run_ssh_commands_legacy
+    
     if len(blocks) > 1:
         # Multi-threaded
         with ThreadPoolExecutor() as executor:
             futures = []
             for idx, group in enumerate(blocks, 1):
-                futures.append(executor.submit(run_ssh_commands, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, idx))
+                futures.append(executor.submit(ssh_function, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, idx))
             for future in futures:
                 future.result()
     else:
         # Single-threaded
-        run_ssh_commands(commands, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, 1)
+        ssh_function(commands, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, 1)
 
     print("\nAll SSH sessions completed. The window will close in 5 seconds.")
     time.sleep(5)
