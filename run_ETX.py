@@ -35,17 +35,49 @@ def load_settings(settings_path="settings.txt"):
         settings["REMOTE_PORT"] = int(settings["REMOTE_PORT"])
     return settings
 
-def run_remote_etx():
+def run_remote_etx(hostname=None):
     import paramiko
     import time
     from concurrent.futures import ThreadPoolExecutor
 
     settings = load_settings()
-    REMOTE_HOST = settings["REMOTE_HOST"]
+    
+    # Hostname mapping - you can customize this based on your actual setup
+    # For now, we'll use the base IP with the hostname for display purposes
+    # In a real setup, you might have different IPs or use actual hostnames
+    REMOTE_BASE_HOST = settings["REMOTE_HOST"]
+    
+    if hostname:
+        # Use the selected hostname directly if your system supports it
+        # Otherwise, you can map specific hostnames to IPs here
+        REMOTE_HOST = hostname
+        print(f"Using selected hostname: {hostname}")
+        
+        # Example of hostname mapping (uncomment and customize as needed):
+        # hostname_mapping = {
+        #     'login01': '202.20.185.101',
+        #     'login02': '202.20.185.102',
+        #     'login03': '202.20.185.103',
+        #     'login04': '202.20.185.104',
+        #     'login05': '202.20.185.105',
+        #     'login06': '202.20.185.106',
+        #     'login07': '202.20.185.107',
+        #     'login08': '202.20.185.108',
+        #     'login09': '202.20.185.109',
+        #     'login10': '202.20.185.110',
+        # }
+        # REMOTE_HOST = hostname_mapping.get(hostname, REMOTE_BASE_HOST)
+        
+    else:
+        REMOTE_HOST = REMOTE_BASE_HOST
+        print(f"Using default hostname: {REMOTE_HOST}")
+    
     REMOTE_PORT = settings["REMOTE_PORT"]
     REMOTE_USER = settings["REMOTE_USER"]
     REMOTE_PASSWORD = settings["REMOTE_PASS"]
     commands = settings["REMOTE_COMMANDS"]
+    
+    print(f"Connecting to: {REMOTE_HOST}:{REMOTE_PORT}")  # Debug info
 
     # Detect if there are two or more consecutive blank lines (multi-threaded job)
     blocks = []

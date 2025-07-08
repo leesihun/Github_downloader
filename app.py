@@ -67,19 +67,24 @@ def index():
 @app.route('/run_job', methods=['POST'])
 def run_job_route():
     job_type = request.json.get('job_type')
+    hostname = request.json.get('hostname')
+    is_gpu = request.json.get('is_gpu', False)
+    
     if job_type == 'github_to_local':
         job_id = run_job('github_to_local', download_github_to_local)
     elif job_type == 'local_to_etx':
         job_id = run_job('local_to_etx', upload_local_to_etx)
     elif job_type == 'run_etx_commands':
-        job_id = run_job('run_etx_commands', run_remote_etx)
+        def run_etx_with_hostname():
+            run_remote_etx(hostname=hostname)
+        job_id = run_job('run_etx_commands', run_etx_with_hostname)
     elif job_type == 'delete_local_folders':
         job_id = run_job('delete_local_folders', delete_local_folders)
     elif job_type == 'pipeline':
         def pipeline():
             download_github_to_local()
             upload_local_to_etx()
-            run_remote_etx()
+            run_remote_etx(hostname=hostname)
         job_id = run_job('pipeline', pipeline)
     else:
         return jsonify({'error': 'Unknown job type'}), 400
