@@ -82,27 +82,49 @@ python test_enhanced_ssh.py
 
 ## 🛠️ Troubleshooting
 
-### If Job Submissions Still Don't Work:
+### If You Get DNS Resolution Errors:
 
-1. **Check Hostname Mapping:**
+The system now tries to connect directly to hostnames like `login04`. If you get "getaddrinfo failed" errors:
+
+1. **Configure Hostname Mapping:**
    ```python
-   # In run_ETX.py, uncomment and configure:
+   # In run_ETX.py, uncomment and configure Method 2:
    hostname_mapping = {
        'login01': '202.20.185.101',
        'login02': '202.20.185.102',
-       # ... add your specific IP mappings
+       'login03': '202.20.185.103',
+       'login04': '202.20.185.104',
+       'login05': '202.20.185.105',
+       'login06': '202.20.185.106',
+       'login07': '202.20.185.107',
+       'login08': '202.20.185.108',
+       'login09': '202.20.185.109',
+       'login10': '202.20.185.110',
    }
    ```
 
-2. **Verify Job Scheduler Commands:**
+2. **Or Use Fully Qualified Domain Names:**
+   ```python
+   # If your system uses domains, uncomment Method 3:
+   REMOTE_HOST = f"{hostname}.hpc.university.edu"
+   ```
+
+### If Job Submissions Still Don't Work:
+
+1. **Verify Job Scheduler Commands:**
    - Test commands manually in MobaXterm first
    - Ensure proper syntax for your scheduler (`phd run`, `sbatch`, etc.)
    - Check queue and resource availability
 
-3. **Network Connectivity:**
+2. **Network Connectivity:**
    - Ensure selected hostnames (login01-10) are accessible
    - Verify credentials and permissions
    - Check firewall and network policies
+
+3. **Check SSH Connection:**
+   - Verify you can connect to the selected hostname manually
+   - Ensure SSH service is running on the target nodes
+   - Check if the hostnames resolve in your network
 
 ## 🎉 Benefits Over Original Implementation
 

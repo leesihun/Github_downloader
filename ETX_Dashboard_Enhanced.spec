@@ -5,7 +5,7 @@ a = Analysis(
     ['run_dashboard.py'],
     pathex=[],
     binaries=[],
-    datas=[('templates', 'templates'), ('static', 'static'), ('settings.txt', '.'), ('ENHANCED_SSH_GUIDE.md', '.')],
+    datas=[('templates', 'templates'), ('static', 'static'), ('settings.txt', '.'), ('ENHANCED_SSH_GUIDE.md', '.'), ('configure_hostnames.py', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

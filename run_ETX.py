@@ -48,12 +48,15 @@ def run_remote_etx(hostname=None):
     REMOTE_BASE_HOST = settings["REMOTE_HOST"]
     
     if hostname:
-        # Use the selected hostname directly if your system supports it
-        # Otherwise, you can map specific hostnames to IPs here
-        REMOTE_HOST = hostname
-        print(f"Using selected hostname: {hostname}")
+        print(f"Selected hostname: {hostname}")
         
-        # Example of hostname mapping (uncomment and customize as needed):
+        # Method 1: Use hostnames directly (if they're resolvable in your network)
+        # This is the default - try connecting to login01-10 directly
+        REMOTE_HOST = hostname
+        print(f"Connecting to hostname: {REMOTE_HOST}")
+        
+        # Method 2: If hostnames aren't resolvable, map to specific IP addresses
+        # Uncomment and configure the actual IP addresses for your login nodes:
         # hostname_mapping = {
         #     'login01': '202.20.185.101',
         #     'login02': '202.20.185.102',
@@ -67,6 +70,11 @@ def run_remote_etx(hostname=None):
         #     'login10': '202.20.185.110',
         # }
         # REMOTE_HOST = hostname_mapping.get(hostname, REMOTE_BASE_HOST)
+        # print(f"Mapping {hostname} -> {REMOTE_HOST}")
+        
+        # Method 3: If you need to use the base domain, uncomment this:
+        # REMOTE_HOST = f"{hostname}.your-domain.com"  # e.g., login04.hpc.university.edu
+        # print(f"Using FQDN: {REMOTE_HOST}")
         
     else:
         REMOTE_HOST = REMOTE_BASE_HOST
@@ -116,6 +124,7 @@ def run_remote_etx(hostname=None):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         try:
+            print(f"[Session {session_id}] Attempting to connect to {host}:{port}")
             # Connect with additional options for better compatibility
             ssh.connect(
                 host, 
@@ -126,7 +135,7 @@ def run_remote_etx(hostname=None):
                 allow_agent=False,
                 look_for_keys=False
             )
-            print(f"[Session {session_id}] Connected to {host}:{port}")
+            print(f"[Session {session_id}] Successfully connected to {host}:{port}")
             
             # Create persistent shell session (like MobaXterm)
             shell = ssh.invoke_shell(term='xterm', width=120, height=30)
@@ -178,7 +187,24 @@ def run_remote_etx(hostname=None):
             shell.close()
             
         except Exception as e:
-            print(f"[Session {session_id}] Error: {e}")
+            error_msg = str(e)
+            if "getaddrinfo failed" in error_msg:
+                print(f"[Session {session_id}] DNS Resolution Error: Cannot resolve hostname '{host}'")
+                print(f"[Session {session_id}] This usually means the hostname doesn't exist or isn't reachable")
+                print(f"[Session {session_id}] Check your network connection and hostname configuration")
+            elif "Connection refused" in error_msg:
+                print(f"[Session {session_id}] Connection Refused: {host}:{port} is not accepting connections")
+                print(f"[Session {session_id}] Check if SSH service is running on the target server")
+            elif "Authentication failed" in error_msg:
+                print(f"[Session {session_id}] Authentication Failed: Invalid username or password")
+                print(f"[Session {session_id}] Check your credentials in settings")
+            elif "timeout" in error_msg.lower():
+                print(f"[Session {session_id}] Connection Timeout: {host}:{port} is not responding")
+                print(f"[Session {session_id}] Check network connectivity and firewall settings")
+            else:
+                print(f"[Session {session_id}] Connection Error: {e}")
+            
+            print(f"[Session {session_id}] Failed to establish SSH connection")
             import traceback
             traceback.print_exc()
         finally:
