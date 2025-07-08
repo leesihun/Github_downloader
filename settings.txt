@@ -1,4 +1,4 @@
-PROJECT_URL=https://github.com/leesihun/SimulGen-VAE
+PROJECT_URL=https://github.com/leesihun/SomeProject
 ZIP_PATH=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main.zip
 UNZIP_DIR=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main
 LOCAL_TARGET_DIR=D:/AI_projects/PCB_slit/ANN2
@@ -6,10 +6,12 @@ DELETE_FILES=False
 LOCAL_SOURCE_DIR=D:/AI_projects/PCB_slit/ANN2
 REMOTE_HOST=202.20.185.100
 REMOTE_PORT=22
-REMOTE_USER=s.hun.lee
-REMOTE_PASS=atleast12!
+REMOTE_USER=<YourID>
+REMOTE_PASS=<YourPW>
 REMOTE_TARGET_DIRS=
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/2
 REMOTE_COMMANDS=
 ls
+ansys_sub j=jobid ncpu=1
+phd list
