@@ -35,22 +35,16 @@ def load_settings(settings_path="settings.txt"):
         settings["REMOTE_PORT"] = int(settings["REMOTE_PORT"])
     return settings
 
-def run_remote_etx(hostname=None):
+def run_remote_etx():
     import paramiko
     import time
     from concurrent.futures import ThreadPoolExecutor
 
     settings = load_settings()
     
-    # HPC Gateway Connection - All hostnames connect to the same server
-    REMOTE_HOST = settings["REMOTE_HOST"]  # Always 202.20.185.100
-    
-    if hostname:
-        print(f"Selected login preference: {hostname}")
-        print(f"Connecting to HPC gateway: {REMOTE_HOST}")
-        print(f"Requesting assignment to: {hostname} ({'CPU' if hostname.endswith(('01', '02', '03', '04')) else 'GPU'} node)")
-    else:
-        print(f"Connecting to HPC gateway: {REMOTE_HOST} (automatic assignment)")
+    # HPC Gateway Connection
+    REMOTE_HOST = settings["REMOTE_HOST"]
+    print(f"Connecting to HPC gateway: {REMOTE_HOST}")
     
     REMOTE_PORT = settings["REMOTE_PORT"]
     REMOTE_USER = settings["REMOTE_USER"]
@@ -58,8 +52,6 @@ def run_remote_etx(hostname=None):
     commands = settings["REMOTE_COMMANDS"]
     
     print(f"Connecting to: {REMOTE_HOST}:{REMOTE_PORT}")  # Debug info
-    if hostname:
-        print(f"Target environment: {hostname} (CPU: login01-04, GPU: login05-10)")
     
     # SSH execution mode configuration
     # Enhanced mode: Uses persistent shell sessions like MobaXterm (recommended for job schedulers)
@@ -206,8 +198,8 @@ def run_remote_etx(hostname=None):
     # Choose SSH function based on configuration
     ssh_function = run_ssh_commands if USE_ENHANCED_SSH else run_ssh_commands_legacy
     
-    # Create session identifier that includes hostname for organization
-    session_prefix = f"{hostname}" if hostname else "default"
+    # Create session identifier
+    session_prefix = "etx"
     
     if len(blocks) > 1:
         # Multi-threaded

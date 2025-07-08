@@ -133,78 +133,16 @@ document.getElementById('settings-form').onsubmit = function(e) {
 
 
 
-// Handle GPU/CPU toggle and hostname selection
-function updateHostnameOptions(isGPU) {
-    const hostnameSelect = document.getElementById('hostname-select');
-    const resourceLabel = document.getElementById('resource-type-label');
-    
-    hostnameSelect.innerHTML = '';
-    
-    if (isGPU) {
-        // GPU mode: login05-10
-        for (let i = 5; i <= 10; i++) {
-            const option = document.createElement('option');
-            option.value = `login${i.toString().padStart(2, '0')}`;
-            option.textContent = `login${i.toString().padStart(2, '0')}`;
-            if (i === 10) option.selected = true; // Default to login10 for GPU
-            hostnameSelect.appendChild(option);
-        }
-        resourceLabel.textContent = 'GPU Mode';
-    } else {
-        // CPU mode: login01-04
-        for (let i = 1; i <= 4; i++) {
-            const option = document.createElement('option');
-            option.value = `login${i.toString().padStart(2, '0')}`;
-            option.textContent = `login${i.toString().padStart(2, '0')}`;
-            if (i === 4) option.selected = true; // Default to login04 for CPU
-            hostnameSelect.appendChild(option);
-        }
-        resourceLabel.textContent = 'CPU Mode';
-    }
-}
-
-function startJobWithHostname(jobType) {
-    const selectedHostname = document.getElementById('hostname-select').value;
-    const isGPU = document.getElementById('gpu-toggle').checked;
-    
-    showStatus('Starting job...', 'info');
-    fetch('/run_job', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            job_type: jobType,
-            hostname: selectedHostname,
-            is_gpu: isGPU
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.job_id) {
-            currentJobId = data.job_id;
-            showStatus(`Job started: ${currentJobId} (${selectedHostname})`, 'success');
-            pollLog();
-        } else {
-            showStatus('Failed to start job', 'danger');
-        }
-    });
-}
+// Simplified job execution without hostname selection
 
 window.onload = function() {
     loadSettingsForm();
     updateHistory();
     
-    // Initialize hostname options
-    updateHostnameOptions(false); // Default to CPU mode
-    
-    // Add event listener for GPU toggle
-    document.getElementById('gpu-toggle').addEventListener('change', function() {
-        updateHostnameOptions(this.checked);
-    });
-    
-    // Update job button handlers to include hostname
+    // Set up job button handlers
     document.getElementById('run-github-to-local').onclick = () => startJob('github_to_local');
     document.getElementById('run-local-to-etx').onclick = () => startJob('local_to_etx');
-    document.getElementById('run-etx-commands').onclick = () => startJobWithHostname('run_etx_commands');
+    document.getElementById('run-etx-commands').onclick = () => startJob('run_etx_commands');
     document.getElementById('delete-local-folders').onclick = () => startJob('delete_local_folders');
-    document.getElementById('run-pipeline').onclick = () => startJobWithHostname('pipeline');
+    document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
 }; 

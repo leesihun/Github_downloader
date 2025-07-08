@@ -11,13 +11,9 @@ REMOTE_HOST=202.20.185.100
 REMOTE_PORT=22
 REMOTE_USER=s.hun.lee
 REMOTE_PASS=atleast12!
-# HPC Connection Architecture:
-# - Single gateway server: 202.20.185.100
-# - Internal load balancing to login01-10 nodes
-# - Hostname selection (login01-10) is for user preference/organization
-# - Server assigns actual login node automatically
-# - CPU nodes: login01-04, GPU nodes: login05-10
-# - All connections use the same REMOTE_HOST IP address
+# HPC Connection Settings:
+# - Gateway server: 202.20.185.100
+# - Server automatically assigns login nodes
 # List one remote target dir per line below:
 REMOTE_TARGET_DIRS=
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
