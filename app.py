@@ -121,31 +121,30 @@ def run_job_route():
                     time.sleep(1)
                     terminal_outputs[session_id] += "$ run all\n"
                     
-                    # Execute all commands sequentially using the same logic as interactive terminal
-                    terminal_outputs[session_id] += f"🚀 Running all {len(commands)} commands sequentially:\n"
+                    # Combine all commands into one line with && for execution
+                    combined_command = " && ".join(commands)
+                    terminal_outputs[session_id] += f"🚀 Running all {len(commands)} commands as one combined command:\n"
                     terminal_outputs[session_id] += "="*60 + "\n"
+                    terminal_outputs[session_id] += f"📝 Combined Command: {combined_command}\n"
+                    terminal_outputs[session_id] += f"⏳ Executing combined command...\n"
                     
-                    for i, cmd in enumerate(commands, 1):
-                        terminal_outputs[session_id] += f"\n📝 Command {i}/{len(commands)}: {cmd}\n"
-                        terminal_outputs[session_id] += f"⏳ Executing...\n"
-                        
-                        try:
-                            result = executor.execute_single_command(cmd)
-                            terminal_outputs[session_id] += f"✅ Command {i} completed successfully\n"
-                            if result and result.strip():
-                                # Show first few lines of output
-                                output_lines = result.strip().split('\n')
-                                if len(output_lines) > 5:
-                                    terminal_outputs[session_id] += f"Output (first 5 lines):\n"
-                                    for line in output_lines[:5]:
-                                        terminal_outputs[session_id] += f"  {line}\n"
-                                    terminal_outputs[session_id] += f"  ... ({len(output_lines)-5} more lines)\n"
-                                else:
-                                    terminal_outputs[session_id] += f"Output:\n"
-                                    for line in output_lines:
-                                        terminal_outputs[session_id] += f"  {line}\n"
-                        except Exception as e:
-                            terminal_outputs[session_id] += f"❌ Command {i} failed: {str(e)}\n"
+                    try:
+                        result = executor.execute_single_command(combined_command)
+                        terminal_outputs[session_id] += f"✅ All commands completed successfully\n"
+                        if result and result.strip():
+                            # Show the full output since it's a combined command
+                            output_lines = result.strip().split('\n')
+                            if len(output_lines) > 20:
+                                terminal_outputs[session_id] += f"Output (first 20 lines):\n"
+                                for line in output_lines[:20]:
+                                    terminal_outputs[session_id] += f"  {line}\n"
+                                terminal_outputs[session_id] += f"  ... ({len(output_lines)-20} more lines)\n"
+                            else:
+                                terminal_outputs[session_id] += f"Output:\n"
+                                for line in output_lines:
+                                    terminal_outputs[session_id] += f"  {line}\n"
+                    except Exception as e:
+                        terminal_outputs[session_id] += f"❌ Combined command failed: {str(e)}\n"
                     
                     terminal_outputs[session_id] += "\n" + "="*60 + "\n"
                     terminal_outputs[session_id] += "🎉 All commands execution completed!\n"
@@ -380,7 +379,7 @@ def send_terminal_command():
   status     - Show session status
   list       - List predefined commands
   run <n>    - Run predefined command number <n>
-  run all    - Run all predefined commands sequentially (1 ~ end)
+  run all    - Run all predefined commands combined with && (1 && 2 && ... && end)
   
 You can also type any shell command directly.
 """
@@ -398,7 +397,7 @@ You can also type any shell command directly.
         terminal_outputs[session_id] += f"📝 Predefined Commands ({len(commands)}):\n"
         for i, cmd in enumerate(commands, 1):
             terminal_outputs[session_id] += f"  {i}. {cmd}\n"
-        terminal_outputs[session_id] += f"\nUse 'run <number>' to execute a command, or 'run all' to execute all {len(commands)} commands.\n"
+        terminal_outputs[session_id] += f"\nUse 'run <number>' to execute a command, or 'run all' to execute all {len(commands)} commands combined with &&.\n"
         return jsonify({'success': True})
     elif command.lower().startswith('run '):
         try:
@@ -407,32 +406,31 @@ You can also type any shell command directly.
             commands = [cmd for cmd in config.get('REMOTE_COMMANDS', []) if cmd.strip() and not cmd.startswith('#')]
             
             if cmd_part.lower() == 'all':
-                # Execute all commands sequentially
-                terminal_outputs[session_id] += f"🚀 Running all {len(commands)} commands sequentially:\n"
+                # Combine all commands into one line with &&
+                combined_command = " && ".join(commands)
+                terminal_outputs[session_id] += f"🚀 Running all {len(commands)} commands as one combined command:\n"
                 terminal_outputs[session_id] += "="*60 + "\n"
+                terminal_outputs[session_id] += f"📝 Combined Command: {combined_command}\n"
+                terminal_outputs[session_id] += f"⏳ Executing combined command...\n"
                 
-                for i, cmd in enumerate(commands, 1):
-                    terminal_outputs[session_id] += f"\n📝 Command {i}/{len(commands)}: {cmd}\n"
-                    terminal_outputs[session_id] += f"⏳ Executing...\n"
-                    
-                    try:
-                        executor = session['executor']
-                        result = executor.execute_single_command(cmd)
-                        terminal_outputs[session_id] += f"✅ Command {i} completed successfully\n"
-                        if result and result.strip():
-                            # Show first few lines of output
-                            output_lines = result.strip().split('\n')
-                            if len(output_lines) > 5:
-                                terminal_outputs[session_id] += f"Output (first 5 lines):\n"
-                                for line in output_lines[:5]:
-                                    terminal_outputs[session_id] += f"  {line}\n"
-                                terminal_outputs[session_id] += f"  ... ({len(output_lines)-5} more lines)\n"
-                            else:
-                                terminal_outputs[session_id] += f"Output:\n"
-                                for line in output_lines:
-                                    terminal_outputs[session_id] += f"  {line}\n"
-                    except Exception as e:
-                        terminal_outputs[session_id] += f"❌ Command {i} failed: {str(e)}\n"
+                try:
+                    executor = session['executor']
+                    result = executor.execute_single_command(combined_command)
+                    terminal_outputs[session_id] += f"✅ All commands completed successfully\n"
+                    if result and result.strip():
+                        # Show the full output since it's a combined command
+                        output_lines = result.strip().split('\n')
+                        if len(output_lines) > 20:
+                            terminal_outputs[session_id] += f"Output (first 20 lines):\n"
+                            for line in output_lines[:20]:
+                                terminal_outputs[session_id] += f"  {line}\n"
+                            terminal_outputs[session_id] += f"  ... ({len(output_lines)-20} more lines)\n"
+                        else:
+                            terminal_outputs[session_id] += f"Output:\n"
+                            for line in output_lines:
+                                terminal_outputs[session_id] += f"  {line}\n"
+                except Exception as e:
+                    terminal_outputs[session_id] += f"❌ Combined command failed: {str(e)}\n"
                 
                 terminal_outputs[session_id] += "\n" + "="*60 + "\n"
                 terminal_outputs[session_id] += "🎉 All commands execution completed!\n"
