@@ -16,6 +16,7 @@ A comprehensive automation system for managing GitHub to HPC workflows with an i
 - **🤖 Automated Mode** - Run all predefined commands automatically
 - **🎮 Interactive Mode** - Type commands in real-time with auto-typing simulation
 - **🔧 Step-by-Step Mode** - Review and modify each command before execution
+- **🚀 Run All Command** - Execute all ETX commands sequentially (run 1 ~ end)
 
 ### **🔄 Workflow Automation**
 - **GitHub → Local** - Download repositories automatically
@@ -157,6 +158,57 @@ run_remote_etx()
 2. **Choose mode:**
    - **🎮 Interactive Mode** - Type commands manually
    - **🤖 Automated Mode** - Run all predefined commands
+3. **Or use the "Run ETX Commands" button** - Automatically executes all commands in terminal
+
+### **🚀 Run All Command**
+
+The **"run all"** command is the most powerful feature for executing all your ETX commands:
+
+```bash
+run all        # Execute all predefined commands sequentially
+```
+
+**Features:**
+- **Sequential execution** - Commands run in order (1, 2, 3, ..., end)
+- **Progress tracking** - Shows current command number and total
+- **Real-time output** - See results as they happen
+- **Error handling** - Continues execution even if one command fails
+- **Output management** - Long outputs are truncated for readability
+- **Interactive afterwards** - Terminal remains active for additional commands
+
+**Example Output:**
+```
+$ run all
+🚀 Running all 5 commands sequentially:
+============================================================
+
+📝 Command 1/5: echo "Starting workflow"
+⏳ Executing...
+✅ Command 1 completed successfully
+Output:
+  Starting workflow
+
+📝 Command 2/5: hostname
+⏳ Executing...
+✅ Command 2 completed successfully
+Output:
+  login01.hpc.example.com
+
+📝 Command 3/5: ls -la
+⏳ Executing...
+✅ Command 3 completed successfully
+Output (first 5 lines):
+  total 1024
+  drwxr-xr-x  8 user group  256 Nov 15 10:30 .
+  drwxr-xr-x 15 user group  480 Nov 15 10:29 ..
+  -rw-r--r--  1 user group   45 Nov 15 10:30 script.py
+  ... (15 more lines)
+
+============================================================
+🎉 All commands execution completed!
+
+💡 You can now type additional commands or 'exit' to close.
+```
 
 ### **Available Commands**
 
@@ -164,6 +216,7 @@ run_remote_etx()
 help           # Show available commands
 list           # List all predefined commands
 run <number>   # Execute predefined command by number
+run all        # Execute all predefined commands sequentially (1 ~ end)
 status         # Show session status
 clear          # Clear terminal screen
 exit           # Exit session
@@ -178,7 +231,8 @@ python script.py
 - **Real SSH command execution** - Commands are executed on remote server
 - **Real-time output** streaming from remote system
 - **Side-by-side job log and terminal** for comprehensive monitoring
-- **ETX Commands in terminal** - Run ETX Commands button executes in interactive terminal
+- **Run ETX Commands button** - Automatically executes "run all" command in terminal
+- **Sequential command execution** - Run all commands (1 ~ end) with progress tracking
 - **Command history** and suggestions
 - **Auto-completion** for predefined commands
 - **Session management** with status indicators
@@ -313,6 +367,12 @@ proxies = {
 - Or run from command line: `.\dist\ETX_Dashboard.exe`
 - Dashboard will start automatically at `http://localhost:5000`
 
+### **Executable Features:**
+- **Standalone operation** - No Python installation required
+- **All functionality included** - Interactive terminal, "run all" commands, job management
+- **Portable** - Can be moved to any Windows system
+- **Auto-start dashboard** - Opens web interface automatically
+
 ## 🆘 Support
 
 ### **Logs Location:**
@@ -366,6 +426,7 @@ python -c "from run_ETX import load_settings; print(load_settings())"
 
 ## 📊 Version History
 
+- **v2.3** - "Run All" command functionality, enhanced ETX Commands button with sequential execution (1 ~ end)
 - **v2.2** - ETX Commands in terminal execution, job log & terminal layout swap
 - **v2.1** - Real SSH command execution, side-by-side terminal & job log layout
 - **v2.0** - Interactive dashboard with real-time terminal

@@ -33,9 +33,9 @@ function startJob(jobType) {
                 // Clear terminal and show initial message
                 showTerminalOutput('🚀 Starting ETX Commands execution...\nConnecting to remote server...\n');
                 
-                // Hide input for automated execution
+                // Show input container for after automated execution
                 const inputContainer = document.querySelector('.terminal-input-container');
-                inputContainer.style.display = 'none';
+                inputContainer.style.display = 'block';
                 
                 // Enable stop button, disable start buttons
                 document.getElementById('stop-terminal').disabled = false;
@@ -45,7 +45,7 @@ function startJob(jobType) {
                 // Start polling for terminal output
                 pollTerminalOutput();
                 
-                showStatus('ETX commands running in terminal', 'info');
+                showStatus('ETX commands running in terminal - you can add more commands after completion', 'info');
             } else {
                 pollLog();
             }

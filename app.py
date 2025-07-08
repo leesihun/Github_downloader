@@ -80,7 +80,7 @@ def run_job_route():
     elif job_type == 'local_to_etx':
         job_id = run_job('local_to_etx', upload_local_to_etx)
     elif job_type == 'run_etx_commands':
-        # Start interactive terminal session with automated execution
+        # Start interactive terminal session and automatically execute "run all"
         try:
             session_id = str(uuid.uuid4())
             config = load_settings()
@@ -88,55 +88,71 @@ def run_job_route():
             # Create executor
             executor = ETXRemoteExecutor(config)
             
-            # Initialize session for automated command execution
+            # Initialize session for ETX commands with interactive terminal
             terminal_sessions[session_id] = {
                 'executor': executor,
                 'input_queue': queue.Queue(),
                 'output_queue': queue.Queue(),
                 'active': True,
-                'mode': 'etx_commands',
+                'mode': 'etx_commands_auto',
                 'thread': None
             }
             terminal_outputs[session_id] = ""
             
-            # Start session thread that executes commands in terminal
+            # Start session thread that shows terminal interface and auto-executes "run all"
             def run_etx_commands_session():
                 try:
-                    terminal_outputs[session_id] += f"🚀 ETX Commands Session Started - {session_id[:8]}\n"
+                    # Show terminal welcome message
+                    terminal_outputs[session_id] += f"🚀 ETX Commands Terminal - Session {session_id[:8]}\n"
                     terminal_outputs[session_id] += f"📋 Connected to: {config.get('REMOTE_HOST', 'Unknown')}\n"
                     terminal_outputs[session_id] += f"👤 User: {config.get('REMOTE_USER', 'Unknown')}\n"
                     terminal_outputs[session_id] += "="*60 + "\n"
                     
-                    commands = config.get('REMOTE_COMMANDS', [])
+                    commands = [cmd for cmd in config.get('REMOTE_COMMANDS', []) if cmd.strip() and not cmd.startswith('#')]
                     if not commands:
                         terminal_outputs[session_id] += "❌ No commands found in settings.txt\n"
                         terminal_sessions[session_id]['active'] = False
                         return
                     
-                    terminal_outputs[session_id] += f"📝 Executing {len(commands)} commands sequentially:\n\n"
+                    terminal_outputs[session_id] += f"📝 Found {len(commands)} commands to execute\n"
+                    terminal_outputs[session_id] += "🤖 Automatically executing 'run all' command...\n\n"
                     
-                    # Execute each command
-                    for i, command in enumerate(commands, 1):
-                        command = command.strip()
-                        if not command or command.startswith('#'):
-                            continue
-                        
-                        terminal_outputs[session_id] += f"$ {command}\n"
-                        
-                        # Add a small delay to simulate typing
-                        time.sleep(0.5)
+                    # Simulate typing the "run all" command
+                    time.sleep(1)
+                    terminal_outputs[session_id] += "$ run all\n"
+                    
+                    # Execute all commands sequentially using the same logic as interactive terminal
+                    terminal_outputs[session_id] += f"🚀 Running all {len(commands)} commands sequentially:\n"
+                    terminal_outputs[session_id] += "="*60 + "\n"
+                    
+                    for i, cmd in enumerate(commands, 1):
+                        terminal_outputs[session_id] += f"\n📝 Command {i}/{len(commands)}: {cmd}\n"
+                        terminal_outputs[session_id] += f"⏳ Executing...\n"
                         
                         try:
-                            terminal_outputs[session_id] += f"⏳ Executing command {i} of {len([c for c in commands if c.strip() and not c.startswith('#')])}...\n"
-                            result = executor.execute_single_command(command)
-                            if result.strip():
-                                terminal_outputs[session_id] += f"{result}\n"
-                            terminal_outputs[session_id] += f"✅ Command {i} completed\n\n"
+                            result = executor.execute_single_command(cmd)
+                            terminal_outputs[session_id] += f"✅ Command {i} completed successfully\n"
+                            if result and result.strip():
+                                # Show first few lines of output
+                                output_lines = result.strip().split('\n')
+                                if len(output_lines) > 5:
+                                    terminal_outputs[session_id] += f"Output (first 5 lines):\n"
+                                    for line in output_lines[:5]:
+                                        terminal_outputs[session_id] += f"  {line}\n"
+                                    terminal_outputs[session_id] += f"  ... ({len(output_lines)-5} more lines)\n"
+                                else:
+                                    terminal_outputs[session_id] += f"Output:\n"
+                                    for line in output_lines:
+                                        terminal_outputs[session_id] += f"  {line}\n"
                         except Exception as e:
-                            terminal_outputs[session_id] += f"❌ Command {i} failed: {str(e)}\n\n"
+                            terminal_outputs[session_id] += f"❌ Command {i} failed: {str(e)}\n"
                     
-                    terminal_outputs[session_id] += "✅ All ETX commands completed!\n"
-                    terminal_sessions[session_id]['active'] = False
+                    terminal_outputs[session_id] += "\n" + "="*60 + "\n"
+                    terminal_outputs[session_id] += "🎉 All commands execution completed!\n"
+                    terminal_outputs[session_id] += "\n💡 You can now type additional commands or 'exit' to close.\n"
+                    
+                    # Keep session active for additional commands
+                    # terminal_sessions[session_id]['active'] = True  # Already set above
                     
                 except Exception as e:
                     terminal_outputs[session_id] += f"\n❌ Session Error: {str(e)}\n"
@@ -358,12 +374,13 @@ def send_terminal_command():
     elif command.lower() == 'help':
         terminal_outputs[session_id] += """
 🚀 Interactive Terminal Help:
-  help     - Show this help
-  exit     - Exit the terminal session
-  clear    - Clear the terminal
-  status   - Show session status
-  list     - List predefined commands
-  run <n>  - Run predefined command number <n>
+  help       - Show this help
+  exit       - Exit the terminal session
+  clear      - Clear the terminal
+  status     - Show session status
+  list       - List predefined commands
+  run <n>    - Run predefined command number <n>
+  run all    - Run all predefined commands sequentially (1 ~ end)
   
 You can also type any shell command directly.
 """
@@ -377,36 +394,68 @@ You can also type any shell command directly.
         return jsonify({'success': True})
     elif command.lower() == 'list':
         config = load_settings()
-        commands = config.get('REMOTE_COMMANDS', [])
+        commands = [cmd for cmd in config.get('REMOTE_COMMANDS', []) if cmd.strip() and not cmd.startswith('#')]
         terminal_outputs[session_id] += f"📝 Predefined Commands ({len(commands)}):\n"
         for i, cmd in enumerate(commands, 1):
-            if cmd.strip() and not cmd.startswith('#'):
-                terminal_outputs[session_id] += f"  {i}. {cmd}\n"
-        terminal_outputs[session_id] += "\nUse 'run <number>' to execute a command.\n"
+            terminal_outputs[session_id] += f"  {i}. {cmd}\n"
+        terminal_outputs[session_id] += f"\nUse 'run <number>' to execute a command, or 'run all' to execute all {len(commands)} commands.\n"
         return jsonify({'success': True})
     elif command.lower().startswith('run '):
         try:
-            cmd_num = int(command.split(' ', 1)[1])
+            cmd_part = command.split(' ', 1)[1]
             config = load_settings()
             commands = [cmd for cmd in config.get('REMOTE_COMMANDS', []) if cmd.strip() and not cmd.startswith('#')]
             
-            if 1 <= cmd_num <= len(commands):
-                selected_cmd = commands[cmd_num - 1]
-                terminal_outputs[session_id] += f"🎯 Running command {cmd_num}: {selected_cmd}\n"
+            if cmd_part.lower() == 'all':
+                # Execute all commands sequentially
+                terminal_outputs[session_id] += f"🚀 Running all {len(commands)} commands sequentially:\n"
+                terminal_outputs[session_id] += "="*60 + "\n"
                 
-                # Execute the actual command
-                try:
-                    executor = session['executor']
-                    result = executor.execute_single_command(selected_cmd)
-                    terminal_outputs[session_id] += f"✅ Command executed successfully\n"
-                    if result:
-                        terminal_outputs[session_id] += f"Output: {result}\n"
-                except Exception as e:
-                    terminal_outputs[session_id] += f"❌ Command failed: {str(e)}\n"
+                for i, cmd in enumerate(commands, 1):
+                    terminal_outputs[session_id] += f"\n📝 Command {i}/{len(commands)}: {cmd}\n"
+                    terminal_outputs[session_id] += f"⏳ Executing...\n"
+                    
+                    try:
+                        executor = session['executor']
+                        result = executor.execute_single_command(cmd)
+                        terminal_outputs[session_id] += f"✅ Command {i} completed successfully\n"
+                        if result and result.strip():
+                            # Show first few lines of output
+                            output_lines = result.strip().split('\n')
+                            if len(output_lines) > 5:
+                                terminal_outputs[session_id] += f"Output (first 5 lines):\n"
+                                for line in output_lines[:5]:
+                                    terminal_outputs[session_id] += f"  {line}\n"
+                                terminal_outputs[session_id] += f"  ... ({len(output_lines)-5} more lines)\n"
+                            else:
+                                terminal_outputs[session_id] += f"Output:\n"
+                                for line in output_lines:
+                                    terminal_outputs[session_id] += f"  {line}\n"
+                    except Exception as e:
+                        terminal_outputs[session_id] += f"❌ Command {i} failed: {str(e)}\n"
+                
+                terminal_outputs[session_id] += "\n" + "="*60 + "\n"
+                terminal_outputs[session_id] += "🎉 All commands execution completed!\n"
+                
             else:
-                terminal_outputs[session_id] += f"❌ Invalid command number: {cmd_num}\n"
+                cmd_num = int(cmd_part)
+                if 1 <= cmd_num <= len(commands):
+                    selected_cmd = commands[cmd_num - 1]
+                    terminal_outputs[session_id] += f"🎯 Running command {cmd_num}: {selected_cmd}\n"
+                    
+                    # Execute the actual command
+                    try:
+                        executor = session['executor']
+                        result = executor.execute_single_command(selected_cmd)
+                        terminal_outputs[session_id] += f"✅ Command executed successfully\n"
+                        if result:
+                            terminal_outputs[session_id] += f"Output: {result}\n"
+                    except Exception as e:
+                        terminal_outputs[session_id] += f"❌ Command failed: {str(e)}\n"
+                else:
+                    terminal_outputs[session_id] += f"❌ Invalid command number: {cmd_num}\n"
         except ValueError:
-            terminal_outputs[session_id] += f"❌ Invalid command format. Use 'run <number>'\n"
+            terminal_outputs[session_id] += f"❌ Invalid command format. Use 'run <number>' or 'run all'\n"
         return jsonify({'success': True})
     else:
         # Execute actual command via SSH
