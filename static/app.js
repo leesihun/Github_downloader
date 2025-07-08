@@ -2,6 +2,10 @@ let currentJobId = null;
 let logInterval = null;
 let settingsSaveTimeout = null;
 
+// Terminal functionality
+let currentTerminalSession = null;
+let terminalInterval = null;
+
 function showStatus(msg, type='info') {
     const el = document.getElementById('job-status');
     el.innerHTML = `<span class='alert alert-${type} py-1 px-2 mb-0'>${msg}</span>`;
@@ -135,6 +139,143 @@ document.getElementById('settings-form').onsubmit = function(e) {
 
 // Simplified job execution without hostname selection
 
+// Terminal Functions
+function setTerminalStatus(status, type='secondary') {
+    const el = document.getElementById('terminal-status');
+    el.className = `badge bg-${type} ms-2`;
+    el.textContent = status;
+}
+
+function startTerminal(mode) {
+    setTerminalStatus('Starting...', 'warning');
+    
+    fetch('/terminal/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({mode: mode})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            currentTerminalSession = data.session_id;
+            setTerminalStatus('Connected', 'success');
+            
+            // Show input for interactive mode
+            const inputContainer = document.querySelector('.terminal-input-container');
+            if (mode === 'interactive') {
+                inputContainer.style.display = 'block';
+                document.getElementById('terminal-input').focus();
+            } else {
+                inputContainer.style.display = 'none';
+            }
+            
+            // Enable stop button, disable start buttons
+            document.getElementById('stop-terminal').disabled = false;
+            document.getElementById('start-interactive').disabled = true;
+            document.getElementById('start-automated').disabled = true;
+            
+            // Start polling for output
+            pollTerminalOutput();
+        } else {
+            setTerminalStatus('Failed', 'danger');
+            showTerminalOutput(`❌ Failed to start terminal: ${data.error || 'Unknown error'}`);
+        }
+    })
+    .catch(err => {
+        setTerminalStatus('Error', 'danger');
+        showTerminalOutput(`❌ Connection error: ${err.message}`);
+    });
+}
+
+function stopTerminal() {
+    if (!currentTerminalSession) return;
+    
+    fetch(`/terminal/stop/${currentTerminalSession}`, {
+        method: 'POST'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            setTerminalStatus('Disconnected', 'secondary');
+            clearInterval(terminalInterval);
+            currentTerminalSession = null;
+            
+            // Hide input container
+            document.querySelector('.terminal-input-container').style.display = 'none';
+            
+            // Reset buttons
+            document.getElementById('stop-terminal').disabled = true;
+            document.getElementById('start-interactive').disabled = false;
+            document.getElementById('start-automated').disabled = false;
+        }
+    });
+}
+
+function sendTerminalCommand() {
+    const input = document.getElementById('terminal-input');
+    const command = input.value.trim();
+    
+    if (!command || !currentTerminalSession) return;
+    
+    // Clear input
+    input.value = '';
+    
+    fetch('/terminal/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            session_id: currentTerminalSession,
+            command: command
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            showTerminalOutput(`❌ Command failed: ${data.error || 'Unknown error'}`);
+        }
+        // Output will be updated by polling
+    })
+    .catch(err => {
+        showTerminalOutput(`❌ Command error: ${err.message}`);
+    });
+}
+
+function pollTerminalOutput() {
+    if (!currentTerminalSession) return;
+    
+    clearInterval(terminalInterval);
+    terminalInterval = setInterval(() => {
+        fetch(`/terminal/output/${currentTerminalSession}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.output !== undefined) {
+                    showTerminalOutput(data.output);
+                }
+                
+                // Check if session is still active
+                if (!data.active && currentTerminalSession) {
+                    setTerminalStatus('Finished', 'info');
+                    clearInterval(terminalInterval);
+                    
+                    // Keep session ID but disable input for inactive sessions
+                    if (document.querySelector('.terminal-input-container').style.display !== 'none') {
+                        document.getElementById('terminal-input').disabled = true;
+                        document.getElementById('send-command').disabled = true;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Terminal polling error:', err);
+            });
+    }, 1000);
+}
+
+function showTerminalOutput(text) {
+    const output = document.getElementById('terminal-output');
+    output.textContent = text;
+    output.scrollTop = output.scrollHeight;
+}
+
 window.onload = function() {
     loadSettingsForm();
     updateHistory();
@@ -145,4 +286,17 @@ window.onload = function() {
     document.getElementById('run-etx-commands').onclick = () => startJob('run_etx_commands');
     document.getElementById('delete-local-folders').onclick = () => startJob('delete_local_folders');
     document.getElementById('run-pipeline').onclick = () => startJob('pipeline');
+    
+    // Set up terminal button handlers
+    document.getElementById('start-interactive').onclick = () => startTerminal('interactive');
+    document.getElementById('start-automated').onclick = () => startTerminal('automated');
+    document.getElementById('stop-terminal').onclick = stopTerminal;
+    document.getElementById('send-command').onclick = sendTerminalCommand;
+    
+    // Handle Enter key in terminal input
+    document.getElementById('terminal-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendTerminalCommand();
+        }
+    });
 }; 

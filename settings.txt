@@ -1,69 +1,15 @@
-# ===== Github to Local =====
 PROJECT_URL=https://github.com/leesihun/SimulGen-VAE
 ZIP_PATH=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main.zip
 UNZIP_DIR=C:/Users/s.hun.lee/Downloads/SimulGen-VAE-main
 LOCAL_TARGET_DIR=D:/AI_projects/PCB_slit/ANN2
 DELETE_FILES=False
-
-# ===== Local to ETX =====
 LOCAL_SOURCE_DIR=D:/AI_projects/PCB_slit/ANN2
 REMOTE_HOST=202.20.185.100
 REMOTE_PORT=22
 REMOTE_USER=s.hun.lee
 REMOTE_PASS=atleast12!
-# HPC Connection Settings:
-# - Gateway server: 202.20.185.100
-# - Server automatically assigns login nodes
-# List one remote target dir per line below:
 REMOTE_TARGET_DIRS=
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/2
-
-# ===== Run ETX Commands =====
-# (uses REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASS)
-# Enhanced SSH mode is now enabled by default for job scheduler compatibility
-# To use job scheduler commands (like phd run), uncomment the lines below:
 REMOTE_COMMANDS=
-echo "=== Testing MobaXterm-like Environment ==="
-hostname
-whoami
-pwd
-echo "PATH: $PATH"
-echo "Current shell: $SHELL"
-echo "=== Testing Basic Commands ==="
-ls -la
-echo "=== Testing Environment Variables ==="
-env | grep -E "(PATH|HOME|USER|SHELL)" | head -10
-echo "=== Testing Specialized Commands ==="
-which ansys_sub
-echo "=== ANSYS Environment Check ==="
-echo "Checking ANSYS installation..."
-ls -la /usr/ansys* 2>/dev/null || echo "ANSYS not found in /usr/"
-ls -la /opt/ansys* 2>/dev/null || echo "ANSYS not found in /opt/"
-echo "Checking environment variables..."
-env | grep -i ansys || echo "No ANSYS environment variables found"
-echo "=== Testing ANSYS Commands ==="
-echo "Running ansys_sub without parameters to see help..."
-ansys_sub
-echo "=== ANSYS Test Complete ==="
-echo "=== Loading ML Environment ==="
-source ML_env/bin/activate
-cd ML_env/SimulGen-VAE/v3/PCB_slit/484_dataset/1
 ls
-cd ..
-ls
-cp -r 1 2
-cp -r 1 3
-cp -r 1 4
-cp -r 1 5
-cp -r 1 6
-cp -r 1 7
-cp -r 1 8
-cp -r 1 9
-cp -r 1 10
-echo "=== All commands completed ==="
-# Job scheduler commands (uncomment to use with enhanced SSH mode):
-#phd run -ng 1 -p shr_gpu -GR H100 -l %J.log python SimulGen-VAE.py --preset=1 --plot=2 --train_pinn_only=0 --size=small --load_all=1
-#cd ..
-#cd 2
-#phd run -ng 1 -p shr_gpu -GR H100 -l %J.log python SimulGen-VAE.py --preset=1 --plot=2 --train_pinn_only=0 --size=small --load_all=1 

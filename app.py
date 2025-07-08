@@ -5,10 +5,13 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import re
+import json
+import queue
+import uuid
 
 # Import job functions
 from Github_to_Local_to_ETX import download_github_to_local, upload_local_to_etx, delete_local_folders
-from run_ETX import run_remote_etx
+from run_ETX import run_remote_etx, load_settings, ETXRemoteExecutor
 
 app = Flask(__name__)
 LOG_DIR = 'job_logs'
@@ -21,6 +24,10 @@ if not os.path.exists(LOG_DIR):
 job_status = {}
 job_logs = {}
 job_history = []  # List of dicts: {id, type, start, end, status, log_file}
+
+# Interactive terminal sessions
+terminal_sessions = {}  # session_id -> {executor, input_queue, output_queue, active}
+terminal_outputs = {}   # session_id -> output_text
 
 # Helper to run a job in a thread and capture logs
 def run_job(job_type, func):
@@ -174,6 +181,181 @@ def settings_json_route():
             txt = f.read()
         settings = parse_settings_txt_to_json(txt)
         return jsonify(settings)
+
+# Interactive Terminal Routes
+
+@app.route('/terminal/start', methods=['POST'])
+def start_terminal():
+    """Start a new interactive terminal session"""
+    session_id = str(uuid.uuid4())
+    mode = request.json.get('mode', 'automated')  # 'automated', 'interactive', 'step_by_step'
+    
+    try:
+        # Load configuration
+        config = load_settings()
+        
+        # Create executor
+        executor = ETXRemoteExecutor(config)
+        
+        # Configure mode
+        if mode == 'interactive':
+            executor.set_interactive_mode(True)
+        
+        # Initialize session
+        terminal_sessions[session_id] = {
+            'executor': executor,
+            'input_queue': queue.Queue(),
+            'output_queue': queue.Queue(),
+            'active': True,
+            'mode': mode,
+            'thread': None
+        }
+        terminal_outputs[session_id] = ""
+        
+        # Start session thread
+        def run_terminal_session():
+            try:
+                if mode == 'interactive':
+                    # For interactive mode, we'll handle commands as they come
+                    terminal_outputs[session_id] += f"🚀 Interactive Terminal Started - Session {session_id[:8]}\n"
+                    terminal_outputs[session_id] += f"📋 Connected to: {config.get('REMOTE_HOST', 'Unknown')}\n"
+                    terminal_outputs[session_id] += f"👤 User: {config.get('REMOTE_USER', 'Unknown')}\n"
+                    terminal_outputs[session_id] += "="*60 + "\n"
+                    terminal_outputs[session_id] += "Type commands below or choose from predefined commands:\n\n"
+                    
+                    # Show available predefined commands
+                    commands = config.get('REMOTE_COMMANDS', [])
+                    if commands:
+                        terminal_outputs[session_id] += f"📝 Available predefined commands ({len(commands)}):\n"
+                        for i, cmd in enumerate(commands[:5], 1):
+                            if cmd.strip() and not cmd.startswith('#'):
+                                terminal_outputs[session_id] += f"  {i}. {cmd}\n"
+                        if len(commands) > 5:
+                            terminal_outputs[session_id] += f"  ... and {len(commands)-5} more\n"
+                        terminal_outputs[session_id] += "\n"
+                    
+                    terminal_outputs[session_id] += "Ready for commands!\n"
+                    
+                else:
+                    # For automated mode, run all commands
+                    terminal_outputs[session_id] += f"🤖 Automated Terminal Started - Session {session_id[:8]}\n"
+                    terminal_outputs[session_id] += "="*60 + "\n"
+                    success = executor.execute_commands()
+                    
+                    if success:
+                        terminal_outputs[session_id] += "\n✅ All commands completed successfully!\n"
+                    else:
+                        terminal_outputs[session_id] += "\n❌ Some commands failed. Check logs for details.\n"
+                    
+                    terminal_sessions[session_id]['active'] = False
+                    
+            except Exception as e:
+                terminal_outputs[session_id] += f"\n❌ Terminal Error: {str(e)}\n"
+                terminal_sessions[session_id]['active'] = False
+        
+        # Start the thread
+        thread = threading.Thread(target=run_terminal_session, daemon=True)
+        thread.start()
+        terminal_sessions[session_id]['thread'] = thread
+        
+        return jsonify({'session_id': session_id, 'success': True})
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'success': False}), 500
+
+@app.route('/terminal/send', methods=['POST'])
+def send_terminal_command():
+    """Send a command to an interactive terminal session"""
+    session_id = request.json.get('session_id')
+    command = request.json.get('command', '').strip()
+    
+    if session_id not in terminal_sessions:
+        return jsonify({'error': 'Session not found', 'success': False}), 404
+    
+    session = terminal_sessions[session_id]
+    
+    if not session['active']:
+        return jsonify({'error': 'Session is not active', 'success': False}), 400
+    
+    # Add command to output for display
+    terminal_outputs[session_id] += f"$ {command}\n"
+    
+    # Handle special commands
+    if command.lower() == 'exit':
+        terminal_outputs[session_id] += "👋 Goodbye!\n"
+        session['active'] = False
+        return jsonify({'success': True})
+    elif command.lower() == 'help':
+        terminal_outputs[session_id] += """
+🚀 Interactive Terminal Help:
+  help     - Show this help
+  exit     - Exit the terminal session
+  clear    - Clear the terminal
+  status   - Show session status
+  list     - List predefined commands
+  run <n>  - Run predefined command number <n>
+  
+You can also type any shell command directly.
+"""
+        return jsonify({'success': True})
+    elif command.lower() == 'clear':
+        terminal_outputs[session_id] = f"🚀 Interactive Terminal - Session {session_id[:8]}\n"
+        return jsonify({'success': True})
+    elif command.lower() == 'status':
+        terminal_outputs[session_id] += f"📊 Session Status: {'Active' if session['active'] else 'Inactive'}\n"
+        terminal_outputs[session_id] += f"🔧 Mode: {session['mode']}\n"
+        return jsonify({'success': True})
+    elif command.lower() == 'list':
+        config = load_settings()
+        commands = config.get('REMOTE_COMMANDS', [])
+        terminal_outputs[session_id] += f"📝 Predefined Commands ({len(commands)}):\n"
+        for i, cmd in enumerate(commands, 1):
+            if cmd.strip() and not cmd.startswith('#'):
+                terminal_outputs[session_id] += f"  {i}. {cmd}\n"
+        terminal_outputs[session_id] += "\nUse 'run <number>' to execute a command.\n"
+        return jsonify({'success': True})
+    elif command.lower().startswith('run '):
+        try:
+            cmd_num = int(command.split(' ', 1)[1])
+            config = load_settings()
+            commands = [cmd for cmd in config.get('REMOTE_COMMANDS', []) if cmd.strip() and not cmd.startswith('#')]
+            
+            if 1 <= cmd_num <= len(commands):
+                selected_cmd = commands[cmd_num - 1]
+                terminal_outputs[session_id] += f"🎯 Running command {cmd_num}: {selected_cmd}\n"
+                terminal_outputs[session_id] += "⏳ This would execute the command (simulation mode)\n"
+                terminal_outputs[session_id] += "✅ Command completed (simulated)\n"
+            else:
+                terminal_outputs[session_id] += f"❌ Invalid command number: {cmd_num}\n"
+        except ValueError:
+            terminal_outputs[session_id] += f"❌ Invalid command format. Use 'run <number>'\n"
+        return jsonify({'success': True})
+    else:
+        # For now, simulate command execution
+        terminal_outputs[session_id] += f"⏳ Executing: {command}\n"
+        terminal_outputs[session_id] += "💡 This is simulation mode - commands are not actually executed.\n"
+        terminal_outputs[session_id] += "✅ Command completed (simulated)\n"
+        return jsonify({'success': True})
+
+@app.route('/terminal/output/<session_id>')
+def get_terminal_output(session_id):
+    """Get terminal output for a session"""
+    if session_id not in terminal_outputs:
+        return jsonify({'error': 'Session not found'}), 404
+    
+    return jsonify({
+        'output': terminal_outputs[session_id],
+        'active': terminal_sessions.get(session_id, {}).get('active', False)
+    })
+
+@app.route('/terminal/stop/<session_id>', methods=['POST'])
+def stop_terminal(session_id):
+    """Stop a terminal session"""
+    if session_id in terminal_sessions:
+        terminal_sessions[session_id]['active'] = False
+        terminal_outputs[session_id] += "\n🔴 Terminal session stopped.\n"
+        return jsonify({'success': True})
+    return jsonify({'error': 'Session not found'}), 404
 
 # Static files for frontend
 @app.route('/static/<path:path>')

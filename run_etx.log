@@ -1,0 +1,121 @@
+2025-07-08 13:04:50,014 - INFO - Starting ETX Remote Command Execution
+2025-07-08 13:04:50,014 - INFO - Configuration loaded successfully
+2025-07-08 13:04:50,015 - WARNING - No commands specified in REMOTE_COMMANDS
+2025-07-08 13:04:50,015 - WARNING - No commands to execute
+2025-07-08 13:04:50,015 - INFO - All commands executed successfully
+2025-07-08 13:06:13,430 - INFO - Starting ETX Remote Command Execution
+2025-07-08 13:06:13,431 - INFO - Configuration loaded successfully
+2025-07-08 13:06:13,431 - INFO - [etx-main] Starting SSH session to 202.20.185.100:22
+2025-07-08 13:06:34,467 - ERROR - [etx-main] Session failed: [WinError 10060] ø¨∞·µ» ±∏º∫ø¯¿∏∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·«œ¡ˆ ∏¯«ﬂ∞≈≥™, »£Ω∫∆Æ∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·¿Ã ≤˜æÓ¡≥Ω¿¥œ¥Ÿ
+2025-07-08 13:06:34,472 - ERROR - [etx-main] Connection Error: [WinError 10060] ø¨∞·µ» ±∏º∫ø¯¿∏∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·«œ¡ˆ ∏¯«ﬂ∞≈≥™, »£Ω∫∆Æ∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·¿Ã ≤˜æÓ¡≥Ω¿¥œ¥Ÿ
+2025-07-08 13:06:34,472 - ERROR - Some commands failed
+2025-07-08 13:10:07,546 - INFO - Starting ETX Remote Command Execution
+2025-07-08 13:10:07,546 - INFO - Configuration loaded successfully
+2025-07-08 13:14:11,406 - INFO - Starting ETX Remote Command Execution
+2025-07-08 13:14:11,407 - INFO - Configuration loaded successfully
+2025-07-08 13:16:55,360 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.219.103:5000
+2025-07-08 13:16:55,360 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 13:16:57,642 - INFO - 127.0.0.1 - - [08/Jul/2025 13:16:57] "GET / HTTP/1.1" 200 -
+2025-07-08 13:16:57,928 - INFO - 127.0.0.1 - - [08/Jul/2025 13:16:57] "GET /static/style.css HTTP/1.1" 200 -
+2025-07-08 13:16:57,931 - INFO - 127.0.0.1 - - [08/Jul/2025 13:16:57] "GET /static/app.js HTTP/1.1" 200 -
+2025-07-08 13:16:58,045 - INFO - 127.0.0.1 - - [08/Jul/2025 13:16:58] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:16:58,047 - INFO - 127.0.0.1 - - [08/Jul/2025 13:16:58] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:16:58,052 - INFO - 127.0.0.1 - - [08/Jul/2025 13:16:58] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-07-08 13:17:40,581 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.219.103:5000
+2025-07-08 13:17:40,582 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 13:17:42,875 - INFO - 127.0.0.1 - - [08/Jul/2025 13:17:42] "GET / HTTP/1.1" 200 -
+2025-07-08 13:17:43,002 - INFO - 127.0.0.1 - - [08/Jul/2025 13:17:43] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-07-08 13:17:43,021 - INFO - 127.0.0.1 - - [08/Jul/2025 13:17:43] "[36mGET /static/app.js HTTP/1.1[0m" 304 -
+2025-07-08 13:17:43,180 - INFO - 127.0.0.1 - - [08/Jul/2025 13:17:43] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:17:43,187 - INFO - 127.0.0.1 - - [08/Jul/2025 13:17:43] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:18:40,876 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:40] "POST /run_job HTTP/1.1" 200 -
+2025-07-08 13:18:40,877 - INFO - [etx-main] Starting SSH session to 202.20.185.100:22
+2025-07-08 13:18:42,386 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:42] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:42,386 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:42] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:43,883 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:43] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:43,884 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:43] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:45,387 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:45] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:45,388 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:45] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:47,810 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:47] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:47,811 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:47] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:48,808 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:48] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:48,808 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:48] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:50,807 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:50] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:50,808 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:50] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:51,811 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:51] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:51,812 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:51] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:53,811 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:53] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:53,813 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:53] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:54,800 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:54] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:54,800 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:54] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:56,810 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:56] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:56,811 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:56] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:57,803 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:57] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:57,804 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:57] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:59,801 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:59] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:18:59,802 - INFO - 127.0.0.1 - - [08/Jul/2025 13:18:59] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:19:00,794 - INFO - 127.0.0.1 - - [08/Jul/2025 13:19:00] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:19:00,794 - INFO - 127.0.0.1 - - [08/Jul/2025 13:19:00] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:19:01,924 - ERROR - [etx-main] Session failed: [WinError 10060] ø¨∞·µ» ±∏º∫ø¯¿∏∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·«œ¡ˆ ∏¯«ﬂ∞≈≥™, »£Ω∫∆Æ∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·¿Ã ≤˜æÓ¡≥Ω¿¥œ¥Ÿ
+2025-07-08 13:19:01,924 - ERROR - [etx-main] Connection Error: [WinError 10060] ø¨∞·µ» ±∏º∫ø¯¿∏∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·«œ¡ˆ ∏¯«ﬂ∞≈≥™, »£Ω∫∆Æ∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·¿Ã ≤˜æÓ¡≥Ω¿¥œ¥Ÿ
+2025-07-08 13:19:02,119 - INFO - 127.0.0.1 - - [08/Jul/2025 13:19:02] "GET /job_log/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:19:02,122 - INFO - 127.0.0.1 - - [08/Jul/2025 13:19:02] "GET /job_status/run_etx_commands_20250708_131840 HTTP/1.1" 200 -
+2025-07-08 13:19:02,189 - INFO - 127.0.0.1 - - [08/Jul/2025 13:19:02] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:22:56,127 - INFO - 127.0.0.1 - - [08/Jul/2025 13:22:56] "[33mPOST /terminal/start HTTP/1.1[0m" 404 -
+2025-07-08 13:25:02,796 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:02] "GET / HTTP/1.1" 200 -
+2025-07-08 13:25:02,816 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:02] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-07-08 13:25:02,833 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:02] "GET /static/app.js HTTP/1.1" 200 -
+2025-07-08 13:25:03,010 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:03] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:25:03,011 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:03] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:25:12,820 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:12] "[33mPOST /terminal/start HTTP/1.1[0m" 404 -
+2025-07-08 13:25:21,890 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:21] "POST /settings_json HTTP/1.1" 200 -
+2025-07-08 13:25:26,750 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:26] "[33mPOST /terminal/start HTTP/1.1[0m" 404 -
+2025-07-08 13:25:48,133 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:48] "POST /run_job HTTP/1.1" 200 -
+2025-07-08 13:25:49,428 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:49] "POST /run_job HTTP/1.1" 200 -
+2025-07-08 13:25:49,434 - INFO - [etx-main] Starting SSH session to 202.20.185.100:22
+2025-07-08 13:25:50,934 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:50] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:50,935 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:50] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:52,440 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:52] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:52,440 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:52] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:53,939 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:53] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:53,940 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:53] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:55,433 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:55] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:55,434 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:55] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:56,932 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:56] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:56,932 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:56] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:57,313 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:57] "[33mPOST /terminal/start HTTP/1.1[0m" 404 -
+2025-07-08 13:25:58,440 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:58] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:58,441 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:58] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:59,939 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:59] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:25:59,940 - INFO - 127.0.0.1 - - [08/Jul/2025 13:25:59] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:26:01,435 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:01] "GET /job_log/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:26:01,436 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:01] "GET /job_status/run_etx_commands_20250708_132549 HTTP/1.1" 200 -
+2025-07-08 13:26:07,550 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.219.103:5000
+2025-07-08 13:26:07,550 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 13:26:09,804 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:09] "GET / HTTP/1.1" 200 -
+2025-07-08 13:26:09,845 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:09] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-07-08 13:26:09,856 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:09] "[36mGET /static/app.js HTTP/1.1[0m" 304 -
+2025-07-08 13:26:10,017 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:10] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:26:10,018 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:10] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:26:10,481 - ERROR - [etx-main] Session failed: [WinError 10060] ø¨∞·µ» ±∏º∫ø¯¿∏∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·«œ¡ˆ ∏¯«ﬂ∞≈≥™, »£Ω∫∆Æ∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·¿Ã ≤˜æÓ¡≥Ω¿¥œ¥Ÿ
+2025-07-08 13:26:10,482 - ERROR - [etx-main] Connection Error: [WinError 10060] ø¨∞·µ» ±∏º∫ø¯¿∏∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·«œ¡ˆ ∏¯«ﬂ∞≈≥™, »£Ω∫∆Æ∑Œ∫Œ≈Õ ¿¿¥‰¿Ã æ¯æÓ ø¨∞·¿Ã ≤˜æÓ¡≥Ω¿¥œ¥Ÿ
+2025-07-08 13:26:16,174 - INFO - 127.0.0.1 - - [08/Jul/2025 13:26:16] "[33mPOST /terminal/start HTTP/1.1[0m" 404 -
+2025-07-08 13:26:57,946 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.219.103:5000
+2025-07-08 13:26:57,946 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 13:27:00,320 - INFO - 127.0.0.1 - - [08/Jul/2025 13:27:00] "GET / HTTP/1.1" 200 -
+2025-07-08 13:27:00,626 - INFO - 127.0.0.1 - - [08/Jul/2025 13:27:00] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-07-08 13:27:00,718 - INFO - 127.0.0.1 - - [08/Jul/2025 13:27:00] "[36mGET /static/app.js HTTP/1.1[0m" 304 -
+2025-07-08 13:27:00,960 - INFO - 127.0.0.1 - - [08/Jul/2025 13:27:00] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:27:00,961 - INFO - 127.0.0.1 - - [08/Jul/2025 13:27:00] "GET /job_history HTTP/1.1" 200 -

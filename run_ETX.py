@@ -1,342 +1,721 @@
-def load_settings(settings_path="settings.txt"):
+#!/usr/bin/env python3
+"""
+ETX Remote Command Execution Tool
+Executes commands on remote HPC systems via SSH with enhanced compatibility
+Now supports interactive mode like MobaXterm!
+"""
+
+import os
+import sys
+import time
+import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict, Any, Optional, Tuple
+
+try:
+    import paramiko
+except ImportError:
+    print("ERROR: paramiko library not found. Install with: pip install paramiko")
+    sys.exit(1)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('run_etx.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+class ETXRemoteExecutor:
+    """Enhanced SSH executor for HPC systems with MobaXterm-like functionality"""
+    
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.host = config.get('REMOTE_HOST')
+        self.port = config.get('REMOTE_PORT', 22)
+        self.username = config.get('REMOTE_USER')
+        self.password = config.get('REMOTE_PASS')
+        self.commands = config.get('REMOTE_COMMANDS', [])
+        
+        # Connection settings
+        self.connection_timeout = 30
+        self.command_timeout = 300  # 5 minutes default
+        self.job_command_timeout = 600  # 10 minutes for job commands
+        self.shell_init_wait = 3
+        self.inter_command_delay = 2
+        
+        # Interactive mode settings
+        self.interactive_mode = False
+        self.user_input_queue = []
+        self.input_thread = None
+        self.shell_active = False
+        
+        # Validate configuration
+        self._validate_config()
+    
+    def _validate_config(self) -> None:
+        """Validate required configuration parameters"""
+        required_fields = ['REMOTE_HOST', 'REMOTE_USER', 'REMOTE_PASS']
+        missing_fields = [field for field in required_fields if not self.config.get(field)]
+        
+        if missing_fields:
+            raise ValueError(f"Missing required configuration fields: {', '.join(missing_fields)}")
+        
+        if not self.commands:
+            logger.warning("No commands specified in REMOTE_COMMANDS")
+    
+    def _create_ssh_client(self) -> paramiko.SSHClient:
+        """Create and configure SSH client"""
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Enhanced connection parameters for HPC compatibility
+        connect_params = {
+            'hostname': self.host,
+            'port': self.port,
+            'username': self.username,
+            'password': self.password,
+            'timeout': self.connection_timeout,
+            'allow_agent': False,
+            'look_for_keys': False,
+            'banner_timeout': 30,
+            'auth_timeout': 30
+        }
+        
+        return client, connect_params
+    
+    def _is_job_command(self, command: str) -> bool:
+        """Check if command is a job submission command"""
+        job_keywords = [
+            'ansys_sub', 'phd run', 'sbatch', 'qsub', 'bsub', 
+            'job', 'submit', 'srun', 'mpirun', 'mpiexec'
+        ]
+        return any(keyword in command.lower() for keyword in job_keywords)
+    
+    def _get_command_timeout(self, command: str) -> int:
+        """Get appropriate timeout for command"""
+        return self.job_command_timeout if self._is_job_command(command) else self.command_timeout
+    
+    def _setup_shell_environment(self, shell: paramiko.Channel) -> None:
+        """Setup shell environment like MobaXterm"""
+        logger.info("Setting up shell environment...")
+        
+        # Wait for shell to initialize
+        time.sleep(self.shell_init_wait)
+        
+        # Clear any initial output
+        if shell.recv_ready():
+            initial_output = shell.recv(8192).decode('utf-8', errors='ignore')
+            if self.interactive_mode:
+                print(initial_output, end='')
+            logger.debug(f"Initial shell output: {initial_output[:200]}...")
+        
+        # Load user environment
+        env_commands = [
+            'source ~/.bashrc 2>/dev/null || true',
+            'source ~/.bash_profile 2>/dev/null || true',
+            'source ~/.profile 2>/dev/null || true'
+        ]
+        
+        for cmd in env_commands:
+            shell.send(f"{cmd}\n")
+            time.sleep(0.5)
+            
+        # Clear environment setup output
+        time.sleep(1)
+        if shell.recv_ready():
+            setup_output = shell.recv(8192).decode('utf-8', errors='ignore')
+            if self.interactive_mode:
+                print(setup_output, end='')
+            logger.debug(f"Environment setup output: {setup_output[:200]}...")
+    
+    def _start_input_thread(self, shell: paramiko.Channel) -> None:
+        """Start thread to handle user input in interactive mode"""
+        def input_handler():
+            try:
+                while self.shell_active:
+                    try:
+                        user_input = input()
+                        if user_input.strip().lower() == 'exit':
+                            shell.send('exit\n')
+                            break
+                        elif user_input.strip().lower() == '!menu':
+                            self._show_interactive_menu()
+                            continue
+                        elif user_input.strip().lower() == '!help':
+                            self._show_interactive_help()
+                            continue
+                        shell.send(user_input + '\n')
+                    except EOFError:
+                        break
+                    except Exception as e:
+                        logger.error(f"Input thread error: {e}")
+                        break
+            except:
+                pass
+        
+        self.input_thread = threading.Thread(target=input_handler, daemon=True)
+        self.input_thread.start()
+    
+    def _show_interactive_menu(self) -> None:
+        """Show interactive menu options"""
+        print("\n" + "="*50)
+        print("🔧 INTERACTIVE MODE MENU")
+        print("="*50)
+        print("Commands you can use:")
+        print("  !help     - Show this help")
+        print("  !menu     - Show this menu")
+        print("  exit      - Exit the session")
+        print("  <command> - Execute any command")
+        print("="*50)
+    
+    def _show_interactive_help(self) -> None:
+        """Show interactive help"""
+        print("\n" + "="*50)
+        print("🚀 INTERACTIVE MODE HELP")
+        print("="*50)
+        print("You are now connected to: " + self.host)
+        print("Phase 1: Automated commands were typed and executed from settings")
+        print("Phase 2: You can now type any additional commands manually")
+        print("\nExample commands:")
+        print("  ls -la")
+        print("  pwd")
+        print("  cd /home/sr5/s.hun.lee")
+        print("  ansys_sub")
+        print("  phd run -ng 1 -p shr_gpu -GR H100 python script.py")
+        print("\nSpecial commands:")
+        print("  !menu - Show menu")
+        print("  !help - Show this help")
+        print("  exit  - Exit session")
+        print("="*50)
+    
+    def _execute_commands_interactively(self, shell: paramiko.Channel, commands: List[str]) -> bool:
+        """Execute commands interactively with automatic typing like MobaXterm"""
+        success = True
+        
+        for i, command in enumerate(commands, 1):
+            command = command.strip()
+            if not command or command.startswith('#'):
+                continue
+                
+            print(f"\n📝 Command {i}/{len(commands)}: ", end='', flush=True)
+            
+            # Simulate typing the command character by character
+            time.sleep(0.5)  # Pause before typing
+            for char in command:
+                print(char, end='', flush=True)
+                shell.send(char)
+                # Variable typing speed - faster for normal chars, slower for special chars
+                if char in ' =-|&"\'':
+                    time.sleep(0.05)  # Slightly slower for special characters
+                else:
+                    time.sleep(0.03)  # Normal typing speed
+            
+            print(" ✓")  # Checkmark after typing command
+            time.sleep(0.3)  # Brief pause before pressing Enter
+            
+            # Send Enter key
+            shell.send('\n')
+            
+            # Show real-time output
+            output = ""
+            timeout = self._get_command_timeout(command)
+            start_time = time.time()
+            last_output_time = start_time
+            no_output_timeout = 30
+            
+            print(f"🔄 Executing command {i}/{len(commands)}...")
+            
+            while time.time() - start_time < timeout:
+                if shell.recv_ready():
+                    try:
+                        chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                        output += chunk
+                        print(chunk, end='')  # Real-time output
+                        last_output_time = time.time()
+                    except Exception as e:
+                        print(f"❌ Error reading output: {e}")
+                        success = False
+                        break
+                else:
+                    time.sleep(0.1)
+                    
+                    # Check for no output timeout
+                    if time.time() - last_output_time > no_output_timeout:
+                        print(f"\n⏱️  No output for {no_output_timeout}s, assuming command completed")
+                        break
+                
+                # Check for command completion
+                if self._is_command_complete(output):
+                    print(f"\n✅ Command {i} completed")
+                    time.sleep(1)  # Wait for any remaining output
+                    break
+            
+            # Handle timeout
+            if time.time() - start_time >= timeout:
+                print(f"\n⏱️  Command {i} timed out after {timeout}s")
+                success = False
+            
+            # Job command special handling
+            if self._is_job_command(command):
+                print(f"🔍 Job command detected - checking status...")
+                shell.send('echo "Job submission check"\n')
+                time.sleep(2)
+                
+                # Try to check job status
+                shell.send('qstat 2>/dev/null || echo "qstat not available"\n')
+                time.sleep(3)
+                
+                # Capture any additional output
+                if shell.recv_ready():
+                    additional_output = shell.recv(4096).decode('utf-8', errors='ignore')
+                    print(additional_output, end='')
+            
+            # Wait between commands
+            print(f"⏳ Waiting {self.inter_command_delay}s before next command...")
+            time.sleep(self.inter_command_delay)
+        
+        return success
+
+    def _execute_command_interactive(self, shell: paramiko.Channel, command: str, 
+                                   session_id: str) -> Tuple[str, bool]:
+        """Execute single command interactively"""
+        logger.info(f"[{session_id}] Executing: {command}")
+        
+        # Send command
+        shell.send(f"{command}\n")
+        
+        # Collect output
+        output = ""
+        timeout = self._get_command_timeout(command)
+        start_time = time.time()
+        last_output_time = start_time
+        no_output_timeout = 30  # No output timeout
+        
+        while time.time() - start_time < timeout:
+            if shell.recv_ready():
+                try:
+                    chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                    output += chunk
+                    print(chunk, end='')  # Real-time output
+                    last_output_time = time.time()
+                except Exception as e:
+                    logger.error(f"[{session_id}] Error reading output: {e}")
+                    break
+            else:
+                time.sleep(0.1)
+                
+                # Check for no output timeout
+                if time.time() - last_output_time > no_output_timeout:
+                    logger.info(f"[{session_id}] No output for {no_output_timeout}s, assuming command completed")
+                    break
+            
+            # Check for command completion indicators
+            if self._is_command_complete(output):
+                logger.info(f"[{session_id}] Command completion detected")
+                time.sleep(1)  # Wait for any remaining output
+                break
+        
+        # Handle timeout
+        if time.time() - start_time >= timeout:
+            logger.warning(f"[{session_id}] Command timed out after {timeout}s")
+            return output, False
+        
+        return output, True
+    
+    def _is_command_complete(self, output: str) -> bool:
+        """Check if command has completed based on output patterns"""
+        completion_patterns = [
+            # Shell prompts
+            '$ ', '> ', '# ', '] ', ') ', '~]$ ', '~]# ',
+            # Job submission confirmations
+            'submitted', 'Submitted', 'SUBMITTED', 'Job ID', 'job id',
+            # Completion indicators
+            'Complete', 'COMPLETE', 'Done', 'DONE', 'Finished', 'FINISHED',
+            # Error indicators (also considered completion)
+            'Error', 'ERROR', 'Failed', 'FAILED'
+        ]
+        
+        recent_output = output[-200:] if len(output) > 200 else output
+        return any(pattern in recent_output for pattern in completion_patterns)
+    
+    def _execute_commands_session(self, commands: List[str], session_id: str) -> bool:
+        """Execute commands in a single SSH session"""
+        logger.info(f"[{session_id}] Starting SSH session to {self.host}:{self.port}")
+        
+        client, connect_params = self._create_ssh_client()
+        
+        try:
+            # Connect to server
+            client.connect(**connect_params)
+            logger.info(f"[{session_id}] Connected successfully")
+            
+            # Create interactive shell
+            shell = client.invoke_shell(term='xterm', width=132, height=40)
+            self.shell_active = True
+            
+            # Setup environment
+            self._setup_shell_environment(shell)
+            
+            if self.interactive_mode:
+                # Interactive mode: Auto-type commands then allow manual input
+                print(f"\n🚀 Connected to {self.host}! Starting automated command execution...")
+                print(f"📋 Found {len([c for c in commands if c.strip() and not c.startswith('#')])} commands to execute")
+                print("👀 Watch as commands are automatically typed and executed:")
+                print("="*60)
+                
+                # First, execute predefined commands automatically
+                success = self._execute_commands_interactively(shell, commands)
+                
+                # Then allow manual input
+                print("\n" + "="*60)
+                print("🎮 Automated commands completed! You can now type manual commands.")
+                print("Type '!help' for help, '!menu' for menu, or 'exit' to quit.")
+                print("="*60)
+                
+                self._start_input_thread(shell)
+                
+                # Handle output in real-time for manual commands
+                try:
+                    while self.shell_active:
+                        if shell.recv_ready():
+                            chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                            print(chunk, end='')
+                        time.sleep(0.1)
+                        
+                        # Check if shell is still active
+                        if shell.closed:
+                            break
+                            
+                except KeyboardInterrupt:
+                    print("\n\n🔥 Interrupted by user")
+                    shell.send('exit\n')
+                
+                print("\n👋 Interactive session ended.")
+                self.shell_active = False
+                
+            else:
+                # Automated mode: execute predefined commands
+                success = True
+                for i, command in enumerate(commands, 1):
+                    command = command.strip()
+                    if not command or command.startswith('#'):
+                        continue
+                    
+                    if self._ask_user_confirmation(command, i, len(commands)):
+                        logger.info(f"[{session_id}] Command {i}/{len(commands)}: {command}")
+                        output, cmd_success = self._execute_command_interactive(shell, command, session_id)
+                        
+                        if not cmd_success:
+                            logger.error(f"[{session_id}] Command failed or timed out")
+                            success = False
+                        
+                        # Wait between commands
+                        time.sleep(self.inter_command_delay)
+                    else:
+                        print(f"⏭️  Skipping command: {command}")
+                
+                # Graceful logout
+                shell.send('exit\n')
+                time.sleep(1)
+            
+            shell.close()
+            logger.info(f"[{session_id}] Session completed successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[{session_id}] Session failed: {str(e)}")
+            self._log_connection_error(e, session_id)
+            return False
+        finally:
+            self.shell_active = False
+            client.close()
+    
+    def _ask_user_confirmation(self, command: str, current: int, total: int) -> bool:
+        """Ask user for confirmation before executing command"""
+        print(f"\n📋 Command {current}/{total}: {command}")
+        
+        while True:
+            response = input("Execute? (y/n/q/m): ").lower().strip()
+            if response in ['y', 'yes', '']:
+                return True
+            elif response in ['n', 'no']:
+                return False
+            elif response in ['q', 'quit']:
+                print("🚪 Quitting...")
+                sys.exit(0)
+            elif response in ['m', 'modify']:
+                new_command = input(f"Enter new command (or press Enter to keep '{command}'): ").strip()
+                if new_command:
+                    command = new_command
+                    print(f"📝 Modified command: {command}")
+                continue
+            else:
+                print("Please enter 'y' (yes), 'n' (no), 'q' (quit), or 'm' (modify)")
+    
+    def _log_connection_error(self, error: Exception, session_id: str) -> None:
+        """Log detailed connection error information"""
+        error_msg = str(error)
+        
+        if "getaddrinfo failed" in error_msg:
+            logger.error(f"[{session_id}] DNS Resolution Error: Cannot resolve hostname '{self.host}'")
+        elif "Connection refused" in error_msg:
+            logger.error(f"[{session_id}] Connection Refused: {self.host}:{self.port}")
+        elif "Authentication failed" in error_msg:
+            logger.error(f"[{session_id}] Authentication Failed: Invalid credentials")
+        elif "timeout" in error_msg.lower():
+            logger.error(f"[{session_id}] Connection Timeout: {self.host}:{self.port}")
+        else:
+            logger.error(f"[{session_id}] Connection Error: {error_msg}")
+    
+    def _split_commands_into_blocks(self, commands: List[str]) -> List[List[str]]:
+        """Split commands into execution blocks (for parallel execution)"""
+        blocks = []
+        current_block = []
+        blank_count = 0
+        
+        for command in commands:
+            if command.strip() == '':
+                blank_count += 1
+                if blank_count >= 2 and current_block:
+                    blocks.append(current_block)
+                    current_block = []
+                    blank_count = 0
+            else:
+                if blank_count >= 2 and current_block:
+                    blocks.append(current_block)
+                    current_block = []
+                blank_count = 0
+                current_block.append(command)
+        
+        if current_block:
+            blocks.append(current_block)
+        
+        return blocks if blocks else [commands]
+    
+    def set_interactive_mode(self, interactive: bool) -> None:
+        """Enable or disable interactive mode"""
+        self.interactive_mode = interactive
+    
+    def execute_commands(self) -> bool:
+        """Execute all commands with appropriate parallelization"""
+        if not self.commands and not self.interactive_mode:
+            logger.warning("No commands to execute")
+            return True
+        
+        if self.interactive_mode:
+            # Interactive mode: single session with predefined commands
+            return self._execute_commands_session(self.commands, "etx-interactive")
+        
+        # Split commands into blocks
+        command_blocks = self._split_commands_into_blocks(self.commands)
+        
+        if len(command_blocks) == 1:
+            # Single block execution
+            return self._execute_commands_session(command_blocks[0], "etx-main")
+        else:
+            # Multi-block parallel execution
+            logger.info(f"Executing {len(command_blocks)} command blocks in parallel")
+            
+            success = True
+            with ThreadPoolExecutor(max_workers=min(len(command_blocks), 4)) as executor:
+                future_to_block = {
+                    executor.submit(self._execute_commands_session, block, f"etx-{i}"): i
+                    for i, block in enumerate(command_blocks, 1)
+                }
+                
+                for future in as_completed(future_to_block):
+                    block_id = future_to_block[future]
+                    try:
+                        result = future.result()
+                        if not result:
+                            logger.error(f"Block {block_id} failed")
+                            success = False
+                        else:
+                            logger.info(f"Block {block_id} completed successfully")
+                    except Exception as e:
+                        logger.error(f"Block {block_id} raised exception: {e}")
+                        success = False
+            
+            return success
+
+
+def load_settings(settings_path: str = "settings.txt") -> Dict[str, Any]:
+    """Load configuration from settings file"""
+    if not os.path.exists(settings_path):
+        raise FileNotFoundError(f"Settings file not found: {settings_path}")
+    
     settings = {}
-    with open(settings_path, "r") as f:
-        lines = f.readlines()
+    
+    try:
+        with open(settings_path, "r", encoding='utf-8') as f:
+            lines = f.readlines()
+    except Exception as e:
+        raise RuntimeError(f"Failed to read settings file: {e}")
+    
     i = 0
     while i < len(lines):
         line = lines[i].strip()
+        
+        # Skip empty lines and comments
         if not line or line.startswith("#"):
             i += 1
             continue
+        
+        # Handle multi-line values (REMOTE_COMMANDS, REMOTE_TARGET_DIRS)
         if line.startswith("REMOTE_COMMANDS=") or line.startswith("REMOTE_TARGET_DIRS="):
             key = line.split("=", 1)[0].strip().upper()
             values = []
+            
+            # Get initial value if present
             val = line[len(key)+1:].strip()
             if val:
                 values.append(val)
+            
+            # Read subsequent lines
             i += 1
             while i < len(lines):
                 cmd_line = lines[i].strip()
                 if not cmd_line or cmd_line.startswith('#'):
                     i += 1
                     continue
+                # Stop if we hit another setting (must be at start of line and uppercase before =)
                 if '=' in cmd_line and not cmd_line.startswith(' '):
-                    break
+                    # Check if this looks like a new setting (uppercase key at start)
+                    potential_key = cmd_line.split('=')[0].strip()
+                    if potential_key.isupper() and '_' in potential_key:
+                        break
                 values.append(cmd_line)
                 i += 1
+            
             settings[key] = values
             continue
+        
+        # Handle single-line settings
         if "=" in line:
             key, value = line.split("=", 1)
             settings[key.strip().upper()] = value.strip()
+        
         i += 1
+    
     # Type conversions
     if "REMOTE_PORT" in settings:
-        settings["REMOTE_PORT"] = int(settings["REMOTE_PORT"])
+        try:
+            settings["REMOTE_PORT"] = int(settings["REMOTE_PORT"])
+        except ValueError:
+            logger.warning("Invalid REMOTE_PORT value, using default 22")
+            settings["REMOTE_PORT"] = 22
+    
     return settings
 
-def run_remote_etx():
-    import paramiko
-    import time
-    from concurrent.futures import ThreadPoolExecutor
 
-    settings = load_settings()
+def show_main_menu() -> str:
+    """Show main menu and get user choice"""
+    print("\n" + "="*60)
+    print("🚀 ETX Remote Command Execution Tool")
+    print("="*60)
+    print("Choose your execution mode:")
+    print("1. 🤖 Automated Mode - Run predefined commands from settings")
+    print("2. 🎮 Interactive Mode - Auto-type commands + manual input")
+    print("3. 🔧 Step-by-Step Mode - Review each command before execution")
+    print("4. ❌ Exit")
+    print("="*60)
     
-    # HPC Gateway Connection
-    REMOTE_HOST = settings["REMOTE_HOST"]
-    print(f"Connecting to HPC gateway: {REMOTE_HOST}")
-    
-    REMOTE_PORT = settings["REMOTE_PORT"]
-    REMOTE_USER = settings["REMOTE_USER"]
-    REMOTE_PASSWORD = settings["REMOTE_PASS"]
-    commands = settings["REMOTE_COMMANDS"]
-    
-    print(f"Connecting to: {REMOTE_HOST}:{REMOTE_PORT}")  # Debug info
-    
-    # SSH execution mode configuration
-    # Enhanced mode: Uses persistent shell sessions like MobaXterm (recommended for job schedulers)
-    # Legacy mode: Uses exec_command for simple command execution (original behavior)
-    USE_ENHANCED_SSH = True  # Change to False to use legacy mode
-    
-    print(f"Using {'Enhanced' if USE_ENHANCED_SSH else 'Legacy'} SSH mode")
-    if USE_ENHANCED_SSH:
-        print("Enhanced mode: Persistent shell sessions for job scheduler compatibility")
+    while True:
+        choice = input("Enter your choice (1-4): ").strip()
+        if choice in ['1', '2', '3', '4']:
+            return choice
+        print("Please enter 1, 2, 3, or 4")
 
-    # Detect if there are two or more consecutive blank lines (multi-threaded job)
-    blocks = []
-    current = []
-    blank_count = 0
-    for cmd in commands:
-        if cmd.strip() == '':
-            blank_count += 1
-            if blank_count >= 2 and current:
-                blocks.append(current)
-                current = []
-        else:
-            if blank_count >= 2 and current:
-                blocks.append(current)
-                current = []
-            blank_count = 0
-            current.append(cmd)
-    if current:
-        blocks.append(current)
 
-    def run_ssh_commands(commands, host, port, user, password, session_id=None):
-        """
-        MobaXterm-compatible SSH command execution
-        Simulates typing commands directly into a terminal like MobaXterm
-        """
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+def main():
+    """Main execution function"""
+    logger.info("Starting ETX Remote Command Execution")
+    
+    try:
+        # Load configuration
+        config = load_settings()
+        logger.info(f"Configuration loaded successfully")
         
-        try:
-            print(f"[Session {session_id}] Attempting to connect to {host}:{port}")
-            # Connect with additional options for better compatibility
-            ssh.connect(
-                host, 
-                port=port, 
-                username=user, 
-                password=password,
-                timeout=30,
-                allow_agent=False,
-                look_for_keys=False
-            )
-            print(f"[Session {session_id}] Successfully connected to {host}:{port}")
+        # Show menu
+        choice = show_main_menu()
+        
+        if choice == '4':
+            print("👋 Goodbye!")
+            return 0
+        
+        # Create executor
+        executor = ETXRemoteExecutor(config)
+        
+        # Set mode based on choice
+        if choice == '1':
+            print("\n🤖 Running in Automated Mode...")
+            success = executor.execute_commands()
+        elif choice == '2':
+            print("\n🎮 Starting Interactive Mode...")
+            executor.set_interactive_mode(True)
+            success = executor.execute_commands()
+        elif choice == '3':
+            print("\n🔧 Running in Step-by-Step Mode...")
+            success = executor.execute_commands()
+        
+        if success:
+            logger.info("Execution completed successfully")
+            print("\n✅ Execution completed successfully!")
+        else:
+            logger.error("Execution failed")
+            print("\n❌ Execution failed. Check logs for details.")
             
-            # Create interactive shell session exactly like MobaXterm
-            # Using larger terminal size and proper terminal type
-            shell = ssh.invoke_shell(term='vt100', width=132, height=40)
-            
-            # Wait longer for login shell to fully initialize (like MobaXterm)
-            print(f"[Session {session_id}] Waiting for shell initialization...")
-            time.sleep(5)
-            
-            # Capture and display initial login output
-            initial_output = ""
-            start_time = time.time()
-            while time.time() - start_time < 10:  # Wait up to 10 seconds for login
-                if shell.recv_ready():
-                    chunk = shell.recv(4096).decode('utf-8', errors='ignore')
-                    initial_output += chunk
-                    print(chunk, end='')
-                else:
-                    time.sleep(0.1)
-                    
-                # Check if we have a proper prompt (login complete)
-                if any(pattern in initial_output[-50:] for pattern in ['$ ', '> ', '# ', '] ', ') ', '~]$ ']):
-                    break
-            
-            print(f"[Session {session_id}] Shell ready - starting command execution")
-            
-            # Force load user environment like MobaXterm does
-            setup_commands = [
-                "source ~/.bashrc",
-                "source ~/.bash_profile", 
-                "source ~/.profile"
-            ]
-            
-            print(f"[Session {session_id}] Loading user environment...")
-            for setup_cmd in setup_commands:
-                shell.send(setup_cmd + '\n')
-                time.sleep(1)
-                # Clear any output from setup commands
-                if shell.recv_ready():
-                    setup_output = shell.recv(4096).decode('utf-8', errors='ignore')
-                    # Only print if there are actual errors
-                    if 'error' in setup_output.lower() or 'no such file' in setup_output.lower():
-                        print(f"[Session {session_id}] Setup: {setup_output.strip()}")
-            
-            print(f"[Session {session_id}] Environment loaded - executing user commands")
-            
-            # Execute user commands one by one, exactly like typing in MobaXterm
-            for i, command in enumerate(commands):
-                if not command.strip():
-                    continue
-                    
-                print(f"[Session {session_id}] Typing command {i+1}: {command}")
-                
-                # Send command character by character to simulate typing (like MobaXterm)
-                for char in command:
-                    shell.send(char)
-                    time.sleep(0.01)  # Small delay between characters
-                
-                # Send Enter key
-                shell.send('\n')
-                
-                # Special handling for job submission commands
-                is_job_command = any(keyword in command.lower() for keyword in [
-                    'ansys_sub', 'phd run', 'sbatch', 'qsub', 'bsub', 'job', 'submit'
-                ])
-                
-                if is_job_command:
-                    print(f"[Session {session_id}] Job submission command detected - extended monitoring")
-                    max_wait = 180  # 3 minutes for job commands
-                else:
-                    max_wait = 120  # 2 minutes for regular commands
-                
-                # Collect output with real-time display
-                output = ""
-                start_time = time.time()
-                last_output_time = time.time()
-                no_output_timeout = 30  # If no output for 30 seconds, assume command is done
-                
-                print(f"[Session {session_id}] Output:")
-                while time.time() - start_time < max_wait:
-                    if shell.recv_ready():
-                        chunk = shell.recv(4096).decode('utf-8', errors='ignore')
-                        output += chunk
-                        print(chunk, end='')  # Real-time output exactly like MobaXterm
-                        last_output_time = time.time()  # Reset no-output timer
-                    else:
-                        time.sleep(0.1)
-                        
-                        # Check if we've had no output for too long
-                        if time.time() - last_output_time > no_output_timeout:
-                            print(f"\n[Session {session_id}] No output for {no_output_timeout}s - checking if command completed")
-                            break
-                        
-                    # Enhanced prompt detection for different scenarios
-                    if output and any(pattern in output[-200:] for pattern in [
-                        # Standard shell prompts
-                        '$ ', '> ', '# ', '] ', ') ', '~]$ ', '~]# ',
-                        # Login node indicators
-                        'login0', 'login1', 'login2', 'login3', 'login4', 'login5',
-                        'login6', 'login7', 'login8', 'login9',
-                        # Job submission confirmations
-                        'submitted', 'Submitted', 'SUBMITTED', 'Job ID', 'job id',
-                        'Queued', 'QUEUED', 'Running', 'RUNNING',
-                        # Completion indicators
-                        'Complete', 'COMPLETE', 'Done', 'DONE', 'Finished', 'FINISHED',
-                        # Path indicators
-                        '~]', '$HOME', '/home/', 
-                        # ANSYS specific
-                        'ANSYS', 'ansys', 'License', 'Starting'
-                    ]):
-                        # Wait longer to ensure all output is captured
-                        print(f"\n[Session {session_id}] Prompt detected - waiting for remaining output...")
-                        time.sleep(2)
-                        
-                        # Capture any remaining output
-                        remaining_output = ""
-                        for _ in range(20):  # Check for 2 more seconds
-                            if shell.recv_ready():
-                                remaining_chunk = shell.recv(4096).decode('utf-8', errors='ignore')
-                                remaining_output += remaining_chunk
-                                print(remaining_chunk, end='')
-                            time.sleep(0.1)
-                        
-                        output += remaining_output
-                        break
-                
-                if time.time() - start_time >= max_wait:
-                    print(f"\n[Session {session_id}] Command timed out after {max_wait}s")
-                elif time.time() - last_output_time > no_output_timeout:
-                    print(f"\n[Session {session_id}] Command appears to have completed (no output for {no_output_timeout}s)")
-                
-                # For job commands, send a status check command
-                if is_job_command and 'ansys_sub' in command.lower():
-                    print(f"[Session {session_id}] Checking job status...")
-                    shell.send('echo "Job submission completed - checking queue status"\n')
-                    time.sleep(1)
-                    shell.send('qstat\n')  # Or whatever queue status command is available
-                    time.sleep(3)
-                    
-                    # Capture queue status output
-                    if shell.recv_ready():
-                        queue_output = shell.recv(4096).decode('utf-8', errors='ignore')
-                        print(queue_output, end='')
-                
-                # Longer delay between commands for stability
-                time.sleep(3)
-            
-            # Wait 10 seconds before declaring completion to catch any delayed output
-            print(f"[Session {session_id}] Waiting 10 seconds for any delayed output...")
-            time.sleep(10)
-            
-            # Check for any final delayed output
-            final_delayed_output = ""
-            for _ in range(30):  # Check for 3 more seconds
-                if shell.recv_ready():
-                    delayed_chunk = shell.recv(4096).decode('utf-8', errors='ignore')
-                    final_delayed_output += delayed_chunk
-                    print(delayed_chunk, end='')
-                time.sleep(0.1)
-            
-            if final_delayed_output.strip():
-                print(f"\n[Session {session_id}] Captured delayed output from job submissions")
-            
-            print(f"[Session {session_id}] All commands completed")
-            
-            # Graceful logout
-            shell.send('exit\n')
-            time.sleep(2)
-            shell.close()
-            
-        except Exception as e:
-            error_msg = str(e)
-            if "getaddrinfo failed" in error_msg:
-                print(f"[Session {session_id}] DNS Resolution Error: Cannot resolve hostname '{host}'")
-                print(f"[Session {session_id}] This usually means the hostname doesn't exist or isn't reachable")
-                print(f"[Session {session_id}] Check your network connection and hostname configuration")
-            elif "Connection refused" in error_msg:
-                print(f"[Session {session_id}] Connection Refused: {host}:{port} is not accepting connections")
-                print(f"[Session {session_id}] Check if SSH service is running on the target server")
-            elif "Authentication failed" in error_msg:
-                print(f"[Session {session_id}] Authentication Failed: Invalid username or password")
-                print(f"[Session {session_id}] Check your credentials in settings")
-            elif "timeout" in error_msg.lower():
-                print(f"[Session {session_id}] Connection Timeout: {host}:{port} is not responding")
-                print(f"[Session {session_id}] Check network connectivity and firewall settings")
-            else:
-                print(f"[Session {session_id}] Connection Error: {e}")
-            
-            print(f"[Session {session_id}] Failed to establish SSH connection")
-            import traceback
-            traceback.print_exc()
-        finally:
-            ssh.close()
-            print(f"[Session {session_id}] Session completed")
-
-    def run_ssh_commands_legacy(commands, host, port, user, password, session_id=None):
-        """
-        Legacy implementation using exec_command (original behavior)
-        Kept for fallback compatibility
-        """
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(host, port=port, username=user, password=password)
-        command_str = " && ".join(commands)
-        print(f"\n[Session {session_id}] Running: {command_str}\n")
-        stdin, stdout, stderr = ssh.exec_command(command_str)
-        for line in stdout:
-            print(f"[Session {session_id}] {line}", end="")
-        for line in stderr:
-            print(f"[Session {session_id}][stderr] {line}", end="")
-        ssh.close()
-        print(f"[Session {session_id}] Finished.\n")
-
-    # Choose SSH function based on configuration
-    ssh_function = run_ssh_commands if USE_ENHANCED_SSH else run_ssh_commands_legacy
+    except KeyboardInterrupt:
+        print("\n\n🔥 Interrupted by user")
+        return 1
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
+        print(f"\n❌ Fatal error: {e}")
+        return 1
     
-    # Create session identifier
-    session_prefix = "etx"
-    
-    if len(blocks) > 1:
-        # Multi-threaded
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for idx, group in enumerate(blocks, 1):
-                session_id = f"{session_prefix}-{idx}"
-                futures.append(executor.submit(ssh_function, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, session_id))
-            for future in futures:
-                future.result()
-    else:
-        # Single-threaded
-        session_id = f"{session_prefix}-1"
-        ssh_function(commands, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, session_id)
+    return 0
 
-    print("\nAll SSH sessions completed. The window will close in 5 seconds.")
-    time.sleep(5)
+
+def run_remote_etx():
+    """
+    Compatibility wrapper for the old run_remote_etx function
+    Used by app.py dashboard for backward compatibility
+    """
+    try:
+        # Load configuration
+        config = load_settings()
+        
+        # Create executor in automated mode
+        executor = ETXRemoteExecutor(config)
+        
+        # Execute commands in automated mode
+        success = executor.execute_commands()
+        
+        if success:
+            print("✅ All commands executed successfully!")
+        else:
+            print("❌ Some commands failed. Check logs for details.")
+            
+        return success
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return False
+
 
 if __name__ == "__main__":
-    run_remote_etx()
+    exit_code = main()
+    
+    # Keep window open for a moment
+    print("\nPress Enter to exit...")
+    try:
+        input()
+    except KeyboardInterrupt:
+        pass
+    
+    sys.exit(exit_code) 
