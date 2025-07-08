@@ -83,8 +83,8 @@ def run_remote_etx():
 
     def run_ssh_commands(commands, host, port, user, password, session_id=None):
         """
-        Enhanced SSH command execution that mimics MobaXterm behavior
-        Uses persistent shell sessions for better job scheduler compatibility
+        MobaXterm-compatible SSH command execution
+        Simulates typing commands directly into a terminal like MobaXterm
         """
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -103,53 +103,104 @@ def run_remote_etx():
             )
             print(f"[Session {session_id}] Successfully connected to {host}:{port}")
             
-            # Create persistent shell session (like MobaXterm)
-            shell = ssh.invoke_shell(term='xterm', width=120, height=30)
+            # Create interactive shell session exactly like MobaXterm
+            # Using larger terminal size and proper terminal type
+            shell = ssh.invoke_shell(term='vt100', width=132, height=40)
             
-            # Wait for shell to be ready
-            time.sleep(2)
+            # Wait longer for login shell to fully initialize (like MobaXterm)
+            print(f"[Session {session_id}] Waiting for shell initialization...")
+            time.sleep(5)
             
-            # Clear any initial output
-            if shell.recv_ready():
-                initial = shell.recv(4096).decode('utf-8', errors='ignore')
-                print(f"[Session {session_id}] Connection established")
+            # Capture and display initial login output
+            initial_output = ""
+            start_time = time.time()
+            while time.time() - start_time < 10:  # Wait up to 10 seconds for login
+                if shell.recv_ready():
+                    chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                    initial_output += chunk
+                    print(chunk, end='')
+                else:
+                    time.sleep(0.1)
+                    
+                # Check if we have a proper prompt (login complete)
+                if any(pattern in initial_output[-50:] for pattern in ['$ ', '> ', '# ', '] ', ') ', '~]$ ']):
+                    break
             
-            # Execute commands in sequence within the same shell
+            print(f"[Session {session_id}] Shell ready - starting command execution")
+            
+            # Force load user environment like MobaXterm does
+            setup_commands = [
+                "source ~/.bashrc",
+                "source ~/.bash_profile", 
+                "source ~/.profile"
+            ]
+            
+            print(f"[Session {session_id}] Loading user environment...")
+            for setup_cmd in setup_commands:
+                shell.send(setup_cmd + '\n')
+                time.sleep(1)
+                # Clear any output from setup commands
+                if shell.recv_ready():
+                    setup_output = shell.recv(4096).decode('utf-8', errors='ignore')
+                    # Only print if there are actual errors
+                    if 'error' in setup_output.lower() or 'no such file' in setup_output.lower():
+                        print(f"[Session {session_id}] Setup: {setup_output.strip()}")
+            
+            print(f"[Session {session_id}] Environment loaded - executing user commands")
+            
+            # Execute user commands one by one, exactly like typing in MobaXterm
             for i, command in enumerate(commands):
                 if not command.strip():
                     continue
                     
-                print(f"[Session {session_id}] Command {i+1}: {command}")
+                print(f"[Session {session_id}] Typing command {i+1}: {command}")
                 
-                # Send command
-                shell.send(command + '\n')
+                # Send command character by character to simulate typing (like MobaXterm)
+                for char in command:
+                    shell.send(char)
+                    time.sleep(0.01)  # Small delay between characters
+                
+                # Send Enter key
+                shell.send('\n')
                 
                 # Collect output with real-time display
                 output = ""
                 start_time = time.time()
-                max_wait = 60  # Increased timeout for job submissions
+                max_wait = 120  # Extended timeout for complex commands like ansys_sub
                 
+                print(f"[Session {session_id}] Output:")
                 while time.time() - start_time < max_wait:
                     if shell.recv_ready():
                         chunk = shell.recv(4096).decode('utf-8', errors='ignore')
                         output += chunk
-                        print(chunk, end='')  # Real-time output like MobaXterm
+                        print(chunk, end='')  # Real-time output exactly like MobaXterm
                     else:
                         time.sleep(0.1)
                         
-                    # Check for common shell prompt patterns
-                    if output and any(pattern in output[-20:] for pattern in ['$ ', '> ', '# ', '] ', ') ']):
+                    # More comprehensive prompt detection
+                    if output and any(pattern in output[-100:] for pattern in [
+                        '$ ', '> ', '# ', '] ', ') ', '~]$ ', '~]# ', 
+                        'login0', 'login1', '~]', '$HOME', 'Complete', 'Done'
+                    ]):
+                        # Wait a bit more to ensure all output is captured
+                        time.sleep(0.5)
+                        if shell.recv_ready():
+                            final_chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                            output += final_chunk
+                            print(final_chunk, end='')
                         break
                 
                 if time.time() - start_time >= max_wait:
                     print(f"[Session {session_id}] Command timed out after {max_wait}s")
                 
-                # Small delay between commands
-                time.sleep(0.5)
+                # Longer delay between commands for stability
+                time.sleep(2)
+            
+            print(f"[Session {session_id}] All commands completed")
             
             # Graceful logout
             shell.send('exit\n')
-            time.sleep(1)
+            time.sleep(2)
             shell.close()
             
         except Exception as e:

@@ -24,6 +24,19 @@ REMOTE_TARGET_DIRS=
 # Enhanced SSH mode is now enabled by default for job scheduler compatibility
 # To use job scheduler commands (like phd run), uncomment the lines below:
 REMOTE_COMMANDS=
+echo "=== Testing MobaXterm-like Environment ==="
+hostname
+whoami
+pwd
+echo "PATH: $PATH"
+echo "Current shell: $SHELL"
+echo "=== Testing Basic Commands ==="
+ls -la
+echo "=== Testing Environment Variables ==="
+env | grep -E "(PATH|HOME|USER|SHELL)" | head -10
+echo "=== Testing Specialized Commands ==="
+which ansys_sub
+echo "=== Loading ML Environment ==="
 source ML_env/bin/activate
 cd ML_env/SimulGen-VAE/v3/PCB_slit/484_dataset/1
 ls
@@ -38,6 +51,7 @@ cp -r 1 7
 cp -r 1 8
 cp -r 1 9
 cp -r 1 10
+echo "=== All commands completed ==="
 # Job scheduler commands (uncomment to use with enhanced SSH mode):
 #phd run -ng 1 -p shr_gpu -GR H100 -l %J.log python SimulGen-VAE.py --preset=1 --plot=2 --train_pinn_only=0 --size=small --load_all=1
 #cd ..
