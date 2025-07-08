@@ -80,7 +80,77 @@ def run_job_route():
     elif job_type == 'local_to_etx':
         job_id = run_job('local_to_etx', upload_local_to_etx)
     elif job_type == 'run_etx_commands':
-        job_id = run_job('run_etx_commands', run_remote_etx)
+        # Start interactive terminal session with automated execution
+        try:
+            session_id = str(uuid.uuid4())
+            config = load_settings()
+            
+            # Create executor
+            executor = ETXRemoteExecutor(config)
+            
+            # Initialize session for automated command execution
+            terminal_sessions[session_id] = {
+                'executor': executor,
+                'input_queue': queue.Queue(),
+                'output_queue': queue.Queue(),
+                'active': True,
+                'mode': 'etx_commands',
+                'thread': None
+            }
+            terminal_outputs[session_id] = ""
+            
+            # Start session thread that executes commands in terminal
+            def run_etx_commands_session():
+                try:
+                    terminal_outputs[session_id] += f"🚀 ETX Commands Session Started - {session_id[:8]}\n"
+                    terminal_outputs[session_id] += f"📋 Connected to: {config.get('REMOTE_HOST', 'Unknown')}\n"
+                    terminal_outputs[session_id] += f"👤 User: {config.get('REMOTE_USER', 'Unknown')}\n"
+                    terminal_outputs[session_id] += "="*60 + "\n"
+                    
+                    commands = config.get('REMOTE_COMMANDS', [])
+                    if not commands:
+                        terminal_outputs[session_id] += "❌ No commands found in settings.txt\n"
+                        terminal_sessions[session_id]['active'] = False
+                        return
+                    
+                    terminal_outputs[session_id] += f"📝 Executing {len(commands)} commands sequentially:\n\n"
+                    
+                    # Execute each command
+                    for i, command in enumerate(commands, 1):
+                        command = command.strip()
+                        if not command or command.startswith('#'):
+                            continue
+                        
+                        terminal_outputs[session_id] += f"$ {command}\n"
+                        
+                        # Add a small delay to simulate typing
+                        time.sleep(0.5)
+                        
+                        try:
+                            terminal_outputs[session_id] += f"⏳ Executing command {i} of {len([c for c in commands if c.strip() and not c.startswith('#')])}...\n"
+                            result = executor.execute_single_command(command)
+                            if result.strip():
+                                terminal_outputs[session_id] += f"{result}\n"
+                            terminal_outputs[session_id] += f"✅ Command {i} completed\n\n"
+                        except Exception as e:
+                            terminal_outputs[session_id] += f"❌ Command {i} failed: {str(e)}\n\n"
+                    
+                    terminal_outputs[session_id] += "✅ All ETX commands completed!\n"
+                    terminal_sessions[session_id]['active'] = False
+                    
+                except Exception as e:
+                    terminal_outputs[session_id] += f"\n❌ Session Error: {str(e)}\n"
+                    terminal_sessions[session_id]['active'] = False
+            
+            # Start the thread
+            thread = threading.Thread(target=run_etx_commands_session, daemon=True)
+            thread.start()
+            terminal_sessions[session_id]['thread'] = thread
+            
+            return jsonify({'job_id': 'etx_commands_terminal', 'terminal_session': session_id})
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
     elif job_type == 'delete_local_folders':
         job_id = run_job('delete_local_folders', delete_local_folders)
     elif job_type == 'pipeline':

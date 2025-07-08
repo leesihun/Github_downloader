@@ -8,3 +8,23 @@
 2025-07-08 13:37:32,636 - INFO - 127.0.0.1 - - [08/Jul/2025 13:37:32] "[36mGET /static/app.js HTTP/1.1[0m" 304 -
 2025-07-08 13:37:32,872 - INFO - 127.0.0.1 - - [08/Jul/2025 13:37:32] "GET /settings_json HTTP/1.1" 200 -
 2025-07-08 13:37:32,876 - INFO - 127.0.0.1 - - [08/Jul/2025 13:37:32] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:48:08,115 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.219.103:5000
+2025-07-08 13:48:08,116 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 13:48:10,619 - INFO - 127.0.0.1 - - [08/Jul/2025 13:48:10] "GET / HTTP/1.1" 200 -
+2025-07-08 13:48:10,839 - INFO - 127.0.0.1 - - [08/Jul/2025 13:48:10] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-07-08 13:48:10,899 - INFO - 127.0.0.1 - - [08/Jul/2025 13:48:10] "GET /static/app.js HTTP/1.1" 200 -
+2025-07-08 13:48:10,999 - INFO - 127.0.0.1 - - [08/Jul/2025 13:48:10] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:48:11,000 - INFO - 127.0.0.1 - - [08/Jul/2025 13:48:11] "GET /job_history HTTP/1.1" 200 -
+2025-07-08 13:56:41,230 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.219.103:5000
+2025-07-08 13:56:41,230 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-08 13:56:43,718 - INFO - 127.0.0.1 - - [08/Jul/2025 13:56:43] "GET / HTTP/1.1" 200 -
+2025-07-08 13:56:44,011 - INFO - 127.0.0.1 - - [08/Jul/2025 13:56:44] "GET /static/style.css HTTP/1.1" 200 -
+2025-07-08 13:56:44,108 - INFO - 127.0.0.1 - - [08/Jul/2025 13:56:44] "GET /static/app.js HTTP/1.1" 200 -
+2025-07-08 13:56:44,334 - INFO - 127.0.0.1 - - [08/Jul/2025 13:56:44] "GET /settings_json HTTP/1.1" 200 -
+2025-07-08 13:56:44,337 - INFO - 127.0.0.1 - - [08/Jul/2025 13:56:44] "GET /job_history HTTP/1.1" 200 -

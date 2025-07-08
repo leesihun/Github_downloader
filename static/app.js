@@ -23,7 +23,32 @@ function startJob(jobType) {
         if (data.job_id) {
             currentJobId = data.job_id;
             showStatus('Job started: ' + currentJobId, 'success');
-            pollLog();
+            
+            // Special handling for ETX commands - show in terminal
+            if (jobType === 'run_etx_commands' && data.terminal_session) {
+                // Set up terminal session
+                currentTerminalSession = data.terminal_session;
+                setTerminalStatus('Executing ETX Commands', 'success');
+                
+                // Clear terminal and show initial message
+                showTerminalOutput('🚀 Starting ETX Commands execution...\nConnecting to remote server...\n');
+                
+                // Hide input for automated execution
+                const inputContainer = document.querySelector('.terminal-input-container');
+                inputContainer.style.display = 'none';
+                
+                // Enable stop button, disable start buttons
+                document.getElementById('stop-terminal').disabled = false;
+                document.getElementById('start-interactive').disabled = true;
+                document.getElementById('start-automated').disabled = true;
+                
+                // Start polling for terminal output
+                pollTerminalOutput();
+                
+                showStatus('ETX commands running in terminal', 'info');
+            } else {
+                pollLog();
+            }
         } else {
             showStatus('Failed to start job', 'danger');
         }
@@ -257,11 +282,23 @@ function pollTerminalOutput() {
                     setTerminalStatus('Finished', 'info');
                     clearInterval(terminalInterval);
                     
-                    // Keep session ID but disable input for inactive sessions
-                    if (document.querySelector('.terminal-input-container').style.display !== 'none') {
-                        document.getElementById('terminal-input').disabled = true;
-                        document.getElementById('send-command').disabled = true;
-                    }
+                    // Reset terminal buttons after session ends
+                    setTimeout(() => {
+                        setTerminalStatus('Disconnected', 'secondary');
+                        currentTerminalSession = null;
+                        
+                        // Hide input container
+                        document.querySelector('.terminal-input-container').style.display = 'none';
+                        
+                        // Reset buttons
+                        document.getElementById('stop-terminal').disabled = true;
+                        document.getElementById('start-interactive').disabled = false;
+                        document.getElementById('start-automated').disabled = false;
+                        
+                        // Re-enable input fields if they were disabled
+                        document.getElementById('terminal-input').disabled = false;
+                        document.getElementById('send-command').disabled = false;
+                    }, 2000); // Wait 2 seconds before resetting
                 }
             })
             .catch(err => {

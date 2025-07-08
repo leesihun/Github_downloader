@@ -24,8 +24,22 @@
                     <div class="form-text mt-2">Run each step independently or as a pipeline. The system will automatically assign the appropriate login node.</div>
                 </div>
             </div>
-            <!-- Side-by-side layout for Terminal and Job Log -->
+            <!-- Side-by-side layout for Job Log and Terminal -->
             <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            📊 Live Job Log
+                            <span id="job-log-status" class="badge bg-info ms-2">Ready</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">Real-time output from job executions</small>
+                            </div>
+                            <pre id="job-log" style="height: 450px; overflow-y: auto; background: #222; color: #eee; padding: 1em; border-radius: 5px;">No active jobs. Click a job button to start execution.</pre>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-header">
@@ -56,20 +70,6 @@ Click a button above to start a session.</pre>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            📊 Live Job Log
-                            <span id="job-log-status" class="badge bg-info ms-2">Ready</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <small class="text-muted">Real-time output from job executions</small>
-                            </div>
-                            <pre id="job-log" style="height: 450px; overflow-y: auto; background: #222; color: #eee; padding: 1em; border-radius: 5px;">No active jobs. Click a job button to start execution.</pre>
                         </div>
                     </div>
                 </div>

@@ -6,7 +6,7 @@ A comprehensive automation system for managing GitHub to HPC workflows with an i
 
 ### **📊 Web Dashboard**
 - **Visual job management** with real-time status updates
-- **Side-by-side terminal & job log view** for simultaneous monitoring
+- **Side-by-side job log & terminal view** for simultaneous monitoring
 - **Interactive terminal** with real SSH command execution
 - **Settings editor** for easy configuration management
 - **Job history tracking** with downloadable logs
@@ -177,7 +177,8 @@ python script.py
 ### **Interactive Features**
 - **Real SSH command execution** - Commands are executed on remote server
 - **Real-time output** streaming from remote system
-- **Side-by-side terminal and job log** for comprehensive monitoring
+- **Side-by-side job log and terminal** for comprehensive monitoring
+- **ETX Commands in terminal** - Run ETX Commands button executes in interactive terminal
 - **Command history** and suggestions
 - **Auto-completion** for predefined commands
 - **Session management** with status indicators
@@ -288,6 +289,30 @@ proxies = {
 - **User account** with appropriate permissions
 - **Python/Shell** access for command execution
 
+## 🔧 Building Executable
+
+### **Create Standalone .exe File:**
+
+1. **Automatic build (recommended):**
+   ```bash
+   python build_exe.py
+   ```
+
+2. **Manual build:**
+   ```bash
+   pip install pyinstaller
+   pyinstaller ETX_Dashboard.spec --clean
+   ```
+
+3. **Output location:**
+   - **Executable:** `dist/ETX_Dashboard.exe`
+   - **Size:** ~50-70 MB (includes all dependencies)
+
+### **Running the Executable:**
+- Double-click `ETX_Dashboard.exe`
+- Or run from command line: `.\dist\ETX_Dashboard.exe`
+- Dashboard will start automatically at `http://localhost:5000`
+
 ## 🆘 Support
 
 ### **Logs Location:**
@@ -326,19 +351,22 @@ python -c "from run_ETX import load_settings; print(load_settings())"
 2. Test SSH connection manually
 3. Start dashboard: `python run_dashboard.py`
 4. Run "Local → ETX" to test file transfer
-5. Use interactive terminal to test commands
-6. Run full pipeline when ready
+5. Click "Run ETX Commands" to see commands execute in terminal
+6. Use interactive terminal to test additional commands
+7. Run full pipeline when ready
 
 ### **Development Workflow:**
 1. Use interactive terminal for command development
 2. Test commands individually with `run <number>`
 3. Add working commands to `settings.txt`
-4. Use automated mode for production runs
+4. Use "Run ETX Commands" button to execute all commands sequentially
+5. Monitor execution in real-time on the terminal side
 
 ---
 
 ## 📊 Version History
 
+- **v2.2** - ETX Commands in terminal execution, job log & terminal layout swap
 - **v2.1** - Real SSH command execution, side-by-side terminal & job log layout
 - **v2.0** - Interactive dashboard with real-time terminal
 - **v1.5** - Enhanced SSH execution with MobaXterm-like features
