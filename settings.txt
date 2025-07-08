@@ -11,9 +11,13 @@ REMOTE_HOST=202.20.185.100
 REMOTE_PORT=22
 REMOTE_USER=s.hun.lee
 REMOTE_PASS=atleast12!
-# Note: REMOTE_HOST is used as fallback when no hostname is selected
-# When using hostname selection (login01-10), the system will try to connect directly to those hostnames
-# If you get DNS resolution errors, configure the hostname_mapping in run_ETX.py with actual IP addresses
+# HPC Connection Architecture:
+# - Single gateway server: 202.20.185.100
+# - Internal load balancing to login01-10 nodes
+# - Hostname selection (login01-10) is for user preference/organization
+# - Server assigns actual login node automatically
+# - CPU nodes: login01-04, GPU nodes: login05-10
+# - All connections use the same REMOTE_HOST IP address
 # List one remote target dir per line below:
 REMOTE_TARGET_DIRS=
 /home/sr5/s.hun.lee/ML_env/SimulGen_VAE/v3/PCB_slit/484_dataset/1

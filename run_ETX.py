@@ -42,43 +42,15 @@ def run_remote_etx(hostname=None):
 
     settings = load_settings()
     
-    # Hostname mapping - you can customize this based on your actual setup
-    # For now, we'll use the base IP with the hostname for display purposes
-    # In a real setup, you might have different IPs or use actual hostnames
-    REMOTE_BASE_HOST = settings["REMOTE_HOST"]
+    # HPC Gateway Connection - All hostnames connect to the same server
+    REMOTE_HOST = settings["REMOTE_HOST"]  # Always 202.20.185.100
     
     if hostname:
-        print(f"Selected hostname: {hostname}")
-        
-        # Method 1: Use hostnames directly (if they're resolvable in your network)
-        # This is the default - try connecting to login01-10 directly
-        REMOTE_HOST = hostname
-        print(f"Connecting to hostname: {REMOTE_HOST}")
-        
-        # Method 2: If hostnames aren't resolvable, map to specific IP addresses
-        # Uncomment and configure the actual IP addresses for your login nodes:
-        # hostname_mapping = {
-        #     'login01': '202.20.185.101',
-        #     'login02': '202.20.185.102',
-        #     'login03': '202.20.185.103',
-        #     'login04': '202.20.185.104',
-        #     'login05': '202.20.185.105',
-        #     'login06': '202.20.185.106',
-        #     'login07': '202.20.185.107',
-        #     'login08': '202.20.185.108',
-        #     'login09': '202.20.185.109',
-        #     'login10': '202.20.185.110',
-        # }
-        # REMOTE_HOST = hostname_mapping.get(hostname, REMOTE_BASE_HOST)
-        # print(f"Mapping {hostname} -> {REMOTE_HOST}")
-        
-        # Method 3: If you need to use the base domain, uncomment this:
-        # REMOTE_HOST = f"{hostname}.your-domain.com"  # e.g., login04.hpc.university.edu
-        # print(f"Using FQDN: {REMOTE_HOST}")
-        
+        print(f"Selected login preference: {hostname}")
+        print(f"Connecting to HPC gateway: {REMOTE_HOST}")
+        print(f"Requesting assignment to: {hostname} ({'CPU' if hostname.endswith(('01', '02', '03', '04')) else 'GPU'} node)")
     else:
-        REMOTE_HOST = REMOTE_BASE_HOST
-        print(f"Using default hostname: {REMOTE_HOST}")
+        print(f"Connecting to HPC gateway: {REMOTE_HOST} (automatic assignment)")
     
     REMOTE_PORT = settings["REMOTE_PORT"]
     REMOTE_USER = settings["REMOTE_USER"]
@@ -86,6 +58,8 @@ def run_remote_etx(hostname=None):
     commands = settings["REMOTE_COMMANDS"]
     
     print(f"Connecting to: {REMOTE_HOST}:{REMOTE_PORT}")  # Debug info
+    if hostname:
+        print(f"Target environment: {hostname} (CPU: login01-04, GPU: login05-10)")
     
     # SSH execution mode configuration
     # Enhanced mode: Uses persistent shell sessions like MobaXterm (recommended for job schedulers)
@@ -232,17 +206,22 @@ def run_remote_etx(hostname=None):
     # Choose SSH function based on configuration
     ssh_function = run_ssh_commands if USE_ENHANCED_SSH else run_ssh_commands_legacy
     
+    # Create session identifier that includes hostname for organization
+    session_prefix = f"{hostname}" if hostname else "default"
+    
     if len(blocks) > 1:
         # Multi-threaded
         with ThreadPoolExecutor() as executor:
             futures = []
             for idx, group in enumerate(blocks, 1):
-                futures.append(executor.submit(ssh_function, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, idx))
+                session_id = f"{session_prefix}-{idx}"
+                futures.append(executor.submit(ssh_function, group, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, session_id))
             for future in futures:
                 future.result()
     else:
         # Single-threaded
-        ssh_function(commands, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, 1)
+        session_id = f"{session_prefix}-1"
+        ssh_function(commands, REMOTE_HOST, REMOTE_PORT, REMOTE_USER, REMOTE_PASSWORD, session_id)
 
     print("\nAll SSH sessions completed. The window will close in 5 seconds.")
     time.sleep(5)
