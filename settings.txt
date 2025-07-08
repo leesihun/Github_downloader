@@ -36,6 +36,16 @@ echo "=== Testing Environment Variables ==="
 env | grep -E "(PATH|HOME|USER|SHELL)" | head -10
 echo "=== Testing Specialized Commands ==="
 which ansys_sub
+echo "=== ANSYS Environment Check ==="
+echo "Checking ANSYS installation..."
+ls -la /usr/ansys* 2>/dev/null || echo "ANSYS not found in /usr/"
+ls -la /opt/ansys* 2>/dev/null || echo "ANSYS not found in /opt/"
+echo "Checking environment variables..."
+env | grep -i ansys || echo "No ANSYS environment variables found"
+echo "=== Testing ANSYS Commands ==="
+echo "Running ansys_sub without parameters to see help..."
+ansys_sub
+echo "=== ANSYS Test Complete ==="
 echo "=== Loading ML Environment ==="
 source ML_env/bin/activate
 cd ML_env/SimulGen-VAE/v3/PCB_slit/484_dataset/1

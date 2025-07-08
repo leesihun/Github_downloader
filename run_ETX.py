@@ -163,10 +163,22 @@ def run_remote_etx():
                 # Send Enter key
                 shell.send('\n')
                 
+                # Special handling for job submission commands
+                is_job_command = any(keyword in command.lower() for keyword in [
+                    'ansys_sub', 'phd run', 'sbatch', 'qsub', 'bsub', 'job', 'submit'
+                ])
+                
+                if is_job_command:
+                    print(f"[Session {session_id}] Job submission command detected - extended monitoring")
+                    max_wait = 180  # 3 minutes for job commands
+                else:
+                    max_wait = 120  # 2 minutes for regular commands
+                
                 # Collect output with real-time display
                 output = ""
                 start_time = time.time()
-                max_wait = 120  # Extended timeout for complex commands like ansys_sub
+                last_output_time = time.time()
+                no_output_timeout = 30  # If no output for 30 seconds, assume command is done
                 
                 print(f"[Session {session_id}] Output:")
                 while time.time() - start_time < max_wait:
@@ -174,27 +186,84 @@ def run_remote_etx():
                         chunk = shell.recv(4096).decode('utf-8', errors='ignore')
                         output += chunk
                         print(chunk, end='')  # Real-time output exactly like MobaXterm
+                        last_output_time = time.time()  # Reset no-output timer
                     else:
                         time.sleep(0.1)
                         
-                    # More comprehensive prompt detection
-                    if output and any(pattern in output[-100:] for pattern in [
-                        '$ ', '> ', '# ', '] ', ') ', '~]$ ', '~]# ', 
-                        'login0', 'login1', '~]', '$HOME', 'Complete', 'Done'
+                        # Check if we've had no output for too long
+                        if time.time() - last_output_time > no_output_timeout:
+                            print(f"\n[Session {session_id}] No output for {no_output_timeout}s - checking if command completed")
+                            break
+                        
+                    # Enhanced prompt detection for different scenarios
+                    if output and any(pattern in output[-200:] for pattern in [
+                        # Standard shell prompts
+                        '$ ', '> ', '# ', '] ', ') ', '~]$ ', '~]# ',
+                        # Login node indicators
+                        'login0', 'login1', 'login2', 'login3', 'login4', 'login5',
+                        'login6', 'login7', 'login8', 'login9',
+                        # Job submission confirmations
+                        'submitted', 'Submitted', 'SUBMITTED', 'Job ID', 'job id',
+                        'Queued', 'QUEUED', 'Running', 'RUNNING',
+                        # Completion indicators
+                        'Complete', 'COMPLETE', 'Done', 'DONE', 'Finished', 'FINISHED',
+                        # Path indicators
+                        '~]', '$HOME', '/home/', 
+                        # ANSYS specific
+                        'ANSYS', 'ansys', 'License', 'Starting'
                     ]):
-                        # Wait a bit more to ensure all output is captured
-                        time.sleep(0.5)
-                        if shell.recv_ready():
-                            final_chunk = shell.recv(4096).decode('utf-8', errors='ignore')
-                            output += final_chunk
-                            print(final_chunk, end='')
+                        # Wait longer to ensure all output is captured
+                        print(f"\n[Session {session_id}] Prompt detected - waiting for remaining output...")
+                        time.sleep(2)
+                        
+                        # Capture any remaining output
+                        remaining_output = ""
+                        for _ in range(20):  # Check for 2 more seconds
+                            if shell.recv_ready():
+                                remaining_chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                                remaining_output += remaining_chunk
+                                print(remaining_chunk, end='')
+                            time.sleep(0.1)
+                        
+                        output += remaining_output
                         break
                 
                 if time.time() - start_time >= max_wait:
-                    print(f"[Session {session_id}] Command timed out after {max_wait}s")
+                    print(f"\n[Session {session_id}] Command timed out after {max_wait}s")
+                elif time.time() - last_output_time > no_output_timeout:
+                    print(f"\n[Session {session_id}] Command appears to have completed (no output for {no_output_timeout}s)")
+                
+                # For job commands, send a status check command
+                if is_job_command and 'ansys_sub' in command.lower():
+                    print(f"[Session {session_id}] Checking job status...")
+                    shell.send('echo "Job submission completed - checking queue status"\n')
+                    time.sleep(1)
+                    shell.send('qstat\n')  # Or whatever queue status command is available
+                    time.sleep(3)
+                    
+                    # Capture queue status output
+                    if shell.recv_ready():
+                        queue_output = shell.recv(4096).decode('utf-8', errors='ignore')
+                        print(queue_output, end='')
                 
                 # Longer delay between commands for stability
-                time.sleep(2)
+                time.sleep(3)
+            
+            # Wait 10 seconds before declaring completion to catch any delayed output
+            print(f"[Session {session_id}] Waiting 10 seconds for any delayed output...")
+            time.sleep(10)
+            
+            # Check for any final delayed output
+            final_delayed_output = ""
+            for _ in range(30):  # Check for 3 more seconds
+                if shell.recv_ready():
+                    delayed_chunk = shell.recv(4096).decode('utf-8', errors='ignore')
+                    final_delayed_output += delayed_chunk
+                    print(delayed_chunk, end='')
+                time.sleep(0.1)
+            
+            if final_delayed_output.strip():
+                print(f"\n[Session {session_id}] Captured delayed output from job submissions")
             
             print(f"[Session {session_id}] All commands completed")
             
