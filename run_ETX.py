@@ -501,6 +501,36 @@ class ETXRemoteExecutor:
         """Enable or disable interactive mode"""
         self.interactive_mode = interactive
     
+    def execute_single_command(self, command: str) -> str:
+        """Execute a single command via SSH and return the output"""
+        ssh_client = None
+        try:
+            # Create SSH connection
+            ssh_client, connect_params = self._create_ssh_client()
+            ssh_client.connect(**connect_params)
+            
+            # Execute command
+            logger.info(f"Executing single command: {command}")
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+            
+            # Get output
+            output = stdout.read().decode('utf-8')
+            error = stderr.read().decode('utf-8')
+            
+            # Return combined output
+            result = output
+            if error:
+                result += f"\nError: {error}"
+                
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to execute command '{command}': {e}")
+            return f"Error: {str(e)}"
+        finally:
+            if ssh_client:
+                ssh_client.close()
+    
     def execute_commands(self) -> bool:
         """Execute all commands with appropriate parallelization"""
         if not self.commands and not self.interactive_mode:

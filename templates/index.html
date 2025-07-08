@@ -24,39 +24,52 @@
                     <div class="form-text mt-2">Run each step independently or as a pipeline. The system will automatically assign the appropriate login node.</div>
                 </div>
             </div>
-            <div class="card mb-3">
-                <div class="card-header">Live Job Log</div>
-                <div class="card-body">
-                    <pre id="job-log" style="height: 300px; overflow-y: auto; background: #222; color: #eee; padding: 1em; border-radius: 5px;"></pre>
-                </div>
-            </div>
-            <div class="card mb-3">
-                <div class="card-header">
-                    🎮 Interactive Terminal
-                    <span id="terminal-status" class="badge bg-secondary ms-2">Disconnected</span>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <button class="btn btn-primary btn-sm me-2" id="start-interactive" type="button">🎮 Interactive Mode</button>
-                        <button class="btn btn-success btn-sm me-2" id="start-automated" type="button">🤖 Automated Mode</button>
-                        <button class="btn btn-danger btn-sm" id="stop-terminal" type="button" disabled>🔴 Stop</button>
-                    </div>
-                    <div style="background: #1a1a1a; border-radius: 5px; border: 1px solid #333;">
-                        <pre id="terminal-output" style="height: 300px; overflow-y: auto; background: #1a1a1a; color: #00ff00; padding: 1em; margin: 0; font-family: 'Courier New', monospace; font-size: 14px;">Welcome to ETX Interactive Terminal! 🚀
+            <!-- Side-by-side layout for Terminal and Job Log -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            🎮 Interactive Terminal
+                            <span id="terminal-status" class="badge bg-secondary ms-2">Disconnected</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <button class="btn btn-primary btn-sm me-2" id="start-interactive" type="button">🎮 Interactive Mode</button>
+                                <button class="btn btn-success btn-sm me-2" id="start-automated" type="button">🤖 Automated Mode</button>
+                                <button class="btn btn-danger btn-sm" id="stop-terminal" type="button" disabled>🔴 Stop</button>
+                            </div>
+                            <div style="background: #1a1a1a; border-radius: 5px; border: 1px solid #333;">
+                                <pre id="terminal-output" style="height: 400px; overflow-y: auto; background: #1a1a1a; color: #00ff00; padding: 1em; margin: 0; font-family: 'Courier New', monospace; font-size: 14px;">Welcome to ETX Interactive Terminal! 🚀
 Click a button above to start a session.</pre>
-                        <div class="terminal-input-container" style="display: none; padding: 10px; border-top: 1px solid #333;">
-                            <div class="input-group">
-                                <span class="input-group-text" style="background: #333; color: #00ff00; border: none;">$</span>
-                                <input type="text" class="form-control" id="terminal-input" 
-                                       placeholder="Type your command here..." 
-                                       style="background: #1a1a1a; color: #00ff00; border: none; border-radius: 0;">
-                                <button class="btn btn-outline-success" type="button" id="send-command">Send</button>
+                                <div class="terminal-input-container" style="display: none; padding: 10px; border-top: 1px solid #333;">
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="background: #333; color: #00ff00; border: none;">$</span>
+                                        <input type="text" class="form-control" id="terminal-input" 
+                                               placeholder="Type your command here..." 
+                                               style="background: #1a1a1a; color: #00ff00; border: none; border-radius: 0;">
+                                        <button class="btn btn-outline-success" type="button" id="send-command">Send</button>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            💡 Try: <code>help</code>, <code>list</code>, <code>run 1</code>, <code>status</code>, <code>clear</code>
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    💡 Try: <code>help</code>, <code>list</code>, <code>run 1</code>, <code>status</code>, <code>clear</code>
-                                </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            📊 Live Job Log
+                            <span id="job-log-status" class="badge bg-info ms-2">Ready</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">Real-time output from job executions</small>
                             </div>
+                            <pre id="job-log" style="height: 450px; overflow-y: auto; background: #222; color: #eee; padding: 1em; border-radius: 5px;">No active jobs. Click a job button to start execution.</pre>
                         </div>
                     </div>
                 </div>
@@ -142,19 +155,21 @@ Click a button above to start a session.</pre>
                 </div>
             </div>
             <div class="card mb-3">
-                <div class="card-header">✨ New Features</div>
+                <div class="card-header">✨ Current Features</div>
                 <div class="card-body">
                     <ul>
                         <li>✅ Interactive Terminal - Type commands in real-time!</li>
                         <li>✅ Automated Mode - Watch commands execute automatically</li>
-                        <li>✅ Command simulation and validation</li>
+                        <li>✅ Real SSH command execution - Commands are now executed on remote server</li>
+                        <li>✅ Side-by-side Terminal & Job Log view</li>
+                        <li>✅ Live output streaming</li>
                     </ul>
                     <h6 class="mt-3">🚀 Coming Soon:</h6>
                     <ul>
-                        <li>Real SSH command execution (currently simulation)</li>
                         <li>Job scheduling</li>
                         <li>Notifications</li>
                         <li>File transfer monitoring</li>
+                        <li>Command history</li>
                     </ul>
                 </div>
             </div>

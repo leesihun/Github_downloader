@@ -323,18 +323,32 @@ You can also type any shell command directly.
             if 1 <= cmd_num <= len(commands):
                 selected_cmd = commands[cmd_num - 1]
                 terminal_outputs[session_id] += f"🎯 Running command {cmd_num}: {selected_cmd}\n"
-                terminal_outputs[session_id] += "⏳ This would execute the command (simulation mode)\n"
-                terminal_outputs[session_id] += "✅ Command completed (simulated)\n"
+                
+                # Execute the actual command
+                try:
+                    executor = session['executor']
+                    result = executor.execute_single_command(selected_cmd)
+                    terminal_outputs[session_id] += f"✅ Command executed successfully\n"
+                    if result:
+                        terminal_outputs[session_id] += f"Output: {result}\n"
+                except Exception as e:
+                    terminal_outputs[session_id] += f"❌ Command failed: {str(e)}\n"
             else:
                 terminal_outputs[session_id] += f"❌ Invalid command number: {cmd_num}\n"
         except ValueError:
             terminal_outputs[session_id] += f"❌ Invalid command format. Use 'run <number>'\n"
         return jsonify({'success': True})
     else:
-        # For now, simulate command execution
-        terminal_outputs[session_id] += f"⏳ Executing: {command}\n"
-        terminal_outputs[session_id] += "💡 This is simulation mode - commands are not actually executed.\n"
-        terminal_outputs[session_id] += "✅ Command completed (simulated)\n"
+        # Execute actual command via SSH
+        try:
+            executor = session['executor']
+            terminal_outputs[session_id] += f"⏳ Executing: {command}\n"
+            result = executor.execute_single_command(command)
+            terminal_outputs[session_id] += f"✅ Command executed successfully\n"
+            if result:
+                terminal_outputs[session_id] += f"Output: {result}\n"
+        except Exception as e:
+            terminal_outputs[session_id] += f"❌ Command failed: {str(e)}\n"
         return jsonify({'success': True})
 
 @app.route('/terminal/output/<session_id>')
